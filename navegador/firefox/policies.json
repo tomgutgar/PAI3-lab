@@ -1,22 +1,33 @@
 {
   "policies": {
-    "Comment": "ESQUELETO. Descomentar/ajustar y justificar cada directiva en ../directivas.md.",
-
     "DisableTelemetry": true,
     "DisableFirefoxStudies": true,
-    "OfferToSaveLogins": false,
     "PasswordManagerEnabled": false,
+    "OfferToSaveLogins": false,
     "DisableFormHistory": true,
-    "BlockAboutConfig": true
-
-    , "_TODO": [
-      "HttpsOnlyMode: force_enabled",
-      "SSLVersionMin: tls1.2",
-      "DNSOverHTTPS (Enabled + Locked)",
-      "EnableTrackingProtection (Cryptomining, Fingerprinting)",
-      "Cookies.Behavior: reject-tracker-and-partition-foreign",
-      "ExtensionSettings: bloquear * y lista blanca",
-      "Permissions: Camera/Microphone/Location/Notifications BlockNewRequests"
-    ]
+    "BlockAboutConfig": true,
+    "HttpsOnlyMode": "force_enabled",
+    "SSLVersionMin": "tls1.2",
+    "DNSOverHTTPS": { "Enabled": true, "Locked": true },
+    "EnableTrackingProtection": {
+      "Value": true, "Locked": true, "Cryptomining": true, "Fingerprinting": true
+    },
+    "Cookies": { "Behavior": "reject-tracker-and-partition-foreign" },
+    "Permissions": {
+      "Camera":        { "BlockNewRequests": true },
+      "Microphone":    { "BlockNewRequests": true },
+      "Location":      { "BlockNewRequests": true },
+      "Notifications": { "BlockNewRequests": true }
+    },
+    "ExtensionSettings": {
+      "*": {
+        "installation_mode": "blocked",
+        "blocked_install_message": "Extensiones restringidas por la politica de U-Secure."
+      },
+      "uBlock0@raymondhill.net": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      }
+    }
   }
 }

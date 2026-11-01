@@ -1,6 +1,8 @@
 # Checklist de la política (antes/después por móvil)
 
-| # | Medida | Cumple antes | Cumple después | Corrección |
+Modelo: ____    Android: ____    Herramienta de escaneo: Malwarebytes / Koodous
+
+| # | Medida | Cumple antes | Cumple después | Corrección aplicada |
 |---|--------|:---:|:---:|------------|
 | A1 | Orígenes desconocidos desactivados | | | |
 | A2 | Sin root ni kernel modificado | | | |
