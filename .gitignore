@@ -1,0 +1,8 @@
+# Evidencias pesadas que no deben ir al control de versiones si crecen mucho
+*.pcap
+*.session
+*.session.*
+# Sistema
+.DS_Store
+Thumbs.db
+*.tmp

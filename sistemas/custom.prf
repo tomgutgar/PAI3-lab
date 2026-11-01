@@ -1,0 +1,7 @@
+# Perfil de Lynis para saltar tests que NO aplican a estos equipos.
+# Cada skip DEBE justificarse en el informe. No abusar para inflar la nota.
+# Uso: sudo lynis audit system --profile custom.prf
+
+# Ejemplo (descomentar y justificar):
+# skip-test=SSH-7408   # el equipo no ejecuta servidor SSH
+# skip-test=HTTP-6622  # no hay servidor web instalado
