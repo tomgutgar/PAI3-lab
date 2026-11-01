@@ -1,0 +1,15 @@
+{
+  "_comment": "ESQUELETO para Chromium/Brave. Ajustar y justificar en ../directivas.md.",
+  "PasswordManagerEnabled": false,
+  "MetricsReportingEnabled": false,
+  "BlockThirdPartyCookies": true
+
+  , "_TODO": [
+    "HttpsOnlyMode: force_enabled",
+    "SSLVersionMin: tls1.2",
+    "DnsOverHttpsMode: secure",
+    "SafeBrowsingProtectionLevel: 2",
+    "ExtensionInstallBlocklist: [*] + ExtensionInstallAllowlist",
+    "DefaultGeolocationSetting: 2, DefaultNotificationsSetting: 2"
+  ]
+}

@@ -1,0 +1,7 @@
+# DVWA para las pruebas de la parte 4. SOLO en local.
+services:
+  dvwa:
+    image: vulnerables/web-dvwa
+    ports:
+      - "8080:80"
+    restart: unless-stopped
