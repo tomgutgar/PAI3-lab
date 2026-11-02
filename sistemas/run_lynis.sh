@@ -7,17 +7,19 @@ set -euo pipefail
 ETIQUETA="${1:-antes}"
 HOST="$(hostname)"
 FECHA="$(date +%Y-%m-%d)"
-DEST="$(cd "$(dirname "$0")/.." && pwd)/evidencias/sistemas"
+RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
+DEST="$RAIZ/evidencias/sistemas"
 mkdir -p "$DEST"
 
-# Prefiere la copia de git (más actual que la de apt); si no, el lynis del PATH.
-if [ -x "$(dirname "$0")/lynis/lynis" ]; then
-  LYNIS="$(dirname "$0")/lynis/lynis"
-else
-  LYNIS="$(command -v lynis)" || { echo "Lynis no instalado (ver README)."; exit 1; }
-fi
+# Prefiere la copia de git (más actual que la de apt): en la raíz del repo, en sistemas/ o en el directorio actual.
+LYNIS=""
+for d in "$RAIZ/lynis" "$RAIZ/sistemas/lynis" "$PWD"; do
+  [ -x "$d/lynis" ] && [ -d "$d/include" ] && { LYNIS="$d/lynis"; break; }
+done
+[ -n "$LYNIS" ] || LYNIS="$(command -v lynis)" || { echo "Lynis no instalado (ver README)."; exit 1; }
 
-"$LYNIS" audit system
+# La copia de git exige ejecutarse desde su carpeta (busca ./include).
+(cd "$(dirname "$LYNIS")" && "$LYNIS" audit system)
 cp /var/log/lynis.log        "$DEST/lynis-${HOST}-${ETIQUETA}-${FECHA}.log"
 cp /var/log/lynis-report.dat "$DEST/report-${HOST}-${ETIQUETA}-${FECHA}.dat"
 echo
