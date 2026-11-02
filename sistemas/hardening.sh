@@ -7,6 +7,7 @@
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "Ejecuta con sudo."; exit 1; }
 DIR="$(dirname "$0")"
+export DEBIAN_FRONTEND=noninteractive   # aide/rkhunter tiran de postfix, que pregunta
 
 # Añade una línea a un fichero solo si no está ya (idempotencia).
 anadir() { grep -qxF "$2" "$1" 2>/dev/null || echo "$2" >> "$1"; }
