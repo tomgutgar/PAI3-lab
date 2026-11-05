@@ -1,0 +1,28 @@
+Normas del entregable
+Cada Security Team debe entregar a través de la Plataforma de Enseñanza Virtual y en la actividad preparada para ello un archivo zip, nombrado PAI3-ST<Num>.zip, que deberá contener al menos los ficheros siguientes:
+Documento en formato pdf que contenga un informe/resumen del proyecto con los detalles más importantes de las decisiones, soluciones adoptadas y/o implementaciones desarrolladas, así como el resultado y análisis de las pruebas realizadas (máximo 15 páginas). Estructura recomendada:
+Portada e índice contenido
+Resumen ejecutivo
+Auditoría de sistemas informáticos
+Descripción del sistema analizado y herramientas de análisis
+Plan de pruebas y resultados
+Conclusiones
+Análisis y bastionado de navegador web
+Descripción del sistema analizado
+Plan de pruebas y resultados
+Conclusiones
+Auditoría de sistema móvil
+Descripción del sistema analizado y herramientas de análisis
+Plan de pruebas y resultados
+Conclusiones
+Auditoría de sistema web
+Descripción del sistema web  y herramientas de análisis
+Plan de pruebas y resultados
+Conclusiones
+Referencias(no cuenta para el total de páginas permitidas)
+Anexos (no cuenta para el total de páginas)
+
+Evidencias Técnicas: Código fuente y/o scripts desarrollados y/o configuraciones utilizadas de las herramientas. Además, será obligatorio la entrega de las pruebas/test realizados junto con los logs/trazas de todas y cada una de las herramientas de análisis utilizadas (Lynis, ZAP o cualquier otra herramienta utilizada).
+El plazo de entrega de dicho proyecto finaliza el día 10 de noviembre a las 23:59 horas.
+Los proyectos entregados fuera del plazo establecido serán considerados inadecuados por el cliente y, por tanto, entrarán en penalización por cada día de retraso, con entrega de 10% del total, hasta agotarse los puntos.
+El cliente no se aceptarán envíos realizados por email, ni mensajes internos de la enseñanza virtual, ni correo interno de la enseñanza virtual. Toda entrega realizada por estos medios conllevará una penalización del 10% en la entrega.
