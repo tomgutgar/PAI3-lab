@@ -15,13 +15,64 @@ PAI-3 VULNAWEB · Security Team Nº ___ · Integrantes: ___ · Fecha: ___
 
 _Media página. Una frase de resultado por parte._
 
+- Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu y de 64 a 71 en Debian, ambos por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd). _(Fedora pendiente.)_
 - Web (Miguel): de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido.
 
 ## 1. Auditoría de sistemas informáticos
 
 ### 1.1 Descripción del sistema analizado y herramientas
+
+Se han auditado **3 máquinas virtuales**, cada una con una distribución Linux distinta instalada desde su ISO oficial en su última versión estable: **Ubuntu 24.04.5 LTS** (última LTS), **Fedora** y **Debian 13**. Usar tres distribuciones permite comprobar que las medidas de bastionado son portables y no dependen de una distribución concreta. Antes de bastionar se tomó un *snapshot* de cada VM.
+
+La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de controles y devuelve un *hardening index* de 0 a 100. Se ejecuta antes y después del bastionado para medir la mejora. El bastionado se aplica con el script propio **`sistemas/hardening.sh`**, idempotente y organizado por grupos que corresponden a avisos concretos de Lynis (en Fedora, mismas medidas usando `dnf` en lugar de `apt`).
+
+#### Herramientas y medidas que aplica `hardening.sh`
+
+| Grupo | Herramienta / cambio | Cómo protege | Test de Lynis |
+|-------|----------------------|--------------|---------------|
+| `firewall` | **UFW**: deniega todo lo entrante, permite lo saliente | Cierra los puertos no usados; reduce la superficie de ataque por red | FIRE-4590 |
+| `passwords` | **libpam-pwquality** (mín. 12 caracteres, con dígito y mayúscula), caducidad 90 días y `UMASK 027` en `login.defs` | Contraseñas resistentes a fuerza bruta y archivos nuevos no legibles por otros usuarios | AUTH-9262, AUTH-9286, AUTH-9328 |
+| `banner` | Aviso legal en `/etc/issue` e `/issue.net` | Advierte de acceso restringido y registro de actividad (valor legal/disuasorio) | BANN-7126, BANN-7130 |
+| `usb` | Bloqueo de los módulos `usb-storage` y `firewire` | Impide sacar datos o meter malware con memorias USB | STRG-1840, STRG-1846 |
+| `kernel` | **sysctl** (`sysctl-hardening.conf`): anti-spoofing, sin redirecciones ICMP, SYN cookies, ASLR completo, ocultar punteros y `dmesg` | Protege la pila de red (spoofing, SYN flood, MITM) y dificulta explotar el kernel | KRNL-6000 |
+| `coredumps` | `* hard core 0` en `limits.conf` | Evita volcados de memoria que podrían contener contraseñas o claves | KRNL-5820 |
+| `herramientas` | **auditd** y **acct** (auditoría y registro de comandos), **sysstat** (estadísticas), **rkhunter** (detección de rootkits), **fail2ban** (bloquea IPs tras intentos fallidos), **AIDE** (integridad de ficheros), **apt-show-versions** (control de parches) | Añade detección y trazabilidad: si hay un ataque, se detecta y queda registrado | ACCT-*, HRDN-7230, FINT-4350, DEB-0880, PKGS-7394 |
+
+**Por qué sube el índice de Lynis:** el *hardening index* se calcula con los controles que superan la comprobación frente al total evaluado. Cada grupo del script resuelve una o varias sugerencias concretas del informe inicial de Lynis (columna derecha), así que cada control corregido suma puntos. Se aplicó por grupos, repitiendo Lynis entre ellos, para ver qué aporta cada medida (capturas en `evidencias/sistemas/`).
+
 ### 1.2 Plan de pruebas y resultados
+
+**Equipos.** `Pai-ubuntu` (Ubuntu 24.04.5 LTS) y `pai-debian` (Debian 13), ambos auditados con Lynis 3.1.8 el 2-nov-2026. _(Fedora: pendiente.)_
+
+**Procedimiento** (en cada VM, siguiendo el esquema de NIST SP 800-115: auditar, corregir, volver a auditar):
+
+1. `sudo ./run_lynis.sh antes`: auditoría inicial.
+2. `sudo ./hardening.sh firewall` y nueva pasada de Lynis, para medir esta medida por separado. Esta pasada se guardó también con la etiqueta `antes` y sobrescribió el log inicial, así que el índice inicial (64) queda demostrado con la captura `PrimerTest*.png` y el log `antes` corresponde al estado tras el firewall.
+3. `sudo ./hardening.sh`: el resto de grupos.
+4. `sudo ./run_lynis.sh despues`: auditoría final.
+
+**Resultados:**
+
+| Equipo | Índice inicial | Tras firewall | Índice final | Puntos Lynis (tras firewall → final) | Sugerencias (tras firewall → final) |
+|--------|:-----------:|:-------------:|:--------------:|:------------------------------:|:-----------------------------:|
+| Ubuntu 24.04.5 | 64 | 66 | **73** | 206/312 → 242/330 | 44 → 38 |
+| Debian 13      | 64 | 65 | **71** | 214/327 → 246/342 | 49 → 42 |
+
+Los dos equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests más en la segunda pasada (270 → 282 en Ubuntu, 279 → 288 en Debian), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
+
+**Firewall (64 → 66 en Ubuntu, 64 → 65 en Debian).** Con UFW activo y la política "denegar todo lo entrante" (la que recomienda el CIS Benchmark), Lynis pasa a dar el firewall por configurado y el índice sube 1-2 puntos.
+
 ### 1.3 Conclusiones
+
+Con un único script, idempotente y aplicable a ambas distribuciones, las dos máquinas pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos; la mayor mejora (6-7 puntos) viene de las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu y Debian les falta sobre todo detectar y registrar lo que ocurre en el sistema.
+
+Medir por fases también ha mostrado medidas que **no hacen lo que parece**: el banner en español y el umask en Debian. Ese es el valor de repetir la auditoría tras cada cambio en lugar de dar una medida por buena solo porque se ha aplicado. Para subir más el índice, el siguiente paso sería:
+
+1. Inicializar AIDE y definir reglas de auditd.
+2. Poner un banner bilingüe.
+3. Añadir la línea `UMASK` en Debian.
+4. Completar los parámetros sysctl que pide Lynis.
+5. Bastionar SSH.
 
 ## 2. Análisis y bastionado de navegador web
 
