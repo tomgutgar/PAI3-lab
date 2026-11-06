@@ -1,0 +1,39 @@
+=== Mitigación apartado (c) — antes/después, 6-nov-2026 ===
+
+--- 1) Acceso sin autenticación ---
+DELETE sin credenciales a los 6 endpoints de recurso:
+
+ANTES (ver notas-sesion.md y capturas #1-*):
+  v1/alcohol-consumptions-per-capita -> 200 OK
+  v2/alcohol-consumptions-per-capita -> 403 Forbidden (único protegido)
+  v1/literacy-rates                  -> 200 OK
+  v2/literacy-rates                  -> 200 OK
+  v1/road-fatalities                 -> 200 OK
+  v2/road-fatalities                 -> 200 OK
+
+DESPUÉS:
+  v1/alcohol-consumptions-per-capita -> 403
+  v2/alcohol-consumptions-per-capita -> 403
+  v1/literacy-rates                  -> 403
+  v2/literacy-rates                  -> 403
+  v1/road-fatalities                 -> 403
+  v2/road-fatalities                 -> 403
+
+--- 2) Credenciales hardcodeadas (admin/admin) ---
+ANTES: POST /api/v2/alcohol-consumptions-per-capita/login {"username":"admin","password":"admin"} -> 200 OK (token emitido)
+DESPUÉS: mismo request -> 401 Unauthorized
+
+--- 3) Secreto JWT filtrado (contraseñaMiguel) ---
+ANTES: token forjado con jwt.sign({user:"admin"}, "contraseñaMiguel") aceptado por verifyToken -> 200 OK, borraba datos
+DESPUÉS: mismo token forjado -> 401 Unauthorized (secreto rotado, 48 bytes aleatorios, en .env)
+
+--- 4) Inyección NoSQL (operador $ne) ---
+ANTES: ?nation[$ne]=null devolvía los 150 resultados (bypass del filtro)
+DESPUÉS: comprobado con un payload que distingue "filtro ignorado" de "inyección real":
+  GET /api/v2/alcohol-consumptions-per-capita              -> 150 resultados (sin filtro, control)
+  GET /api/v2/alcohol-consumptions-per-capita?nation[$ne]=Spain -> 150 resultados
+  (si el operador llegara a NeDB, excluir España daría 147, no 150 -> el operador se descarta antes de la consulta)
+
+--- Funcionalidad legítima, verificada intacta ---
+Login con credenciales nuevas (admin / password aleatoria en .env) -> 200 OK, token válido
+PUT /api/v2/alcohol-consumptions-per-capita/Spain/2019 con ese token -> 200 OK

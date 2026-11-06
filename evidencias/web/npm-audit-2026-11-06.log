@@ -1,0 +1,319 @@
+# npm audit report
+
+@faker-js/faker  <=10.4.0
+Severity: high
+Faker: helpers.fake exploitable into arbritary code execution - https://github.com/advisories/GHSA-qxc2-j82w-r537
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/@faker-js/faker
+  postman-collection  >=0.5.1
+  Depends on vulnerable versions of @faker-js/faker
+  Depends on vulnerable versions of lodash
+  Depends on vulnerable versions of uuid
+  node_modules/postman-collection
+    newman  >=3.0.0-beta.1
+    Depends on vulnerable versions of csv-parse
+    Depends on vulnerable versions of lodash
+    Depends on vulnerable versions of postman-collection
+    Depends on vulnerable versions of postman-collection-transformer
+    Depends on vulnerable versions of postman-request
+    Depends on vulnerable versions of postman-runtime
+    Depends on vulnerable versions of serialised-error
+    node_modules/newman
+    postman-runtime  >=2.4.3
+    Depends on vulnerable versions of handlebars
+    Depends on vulnerable versions of httpntlm
+    Depends on vulnerable versions of jose
+    Depends on vulnerable versions of lodash
+    Depends on vulnerable versions of node-forge
+    Depends on vulnerable versions of postman-collection
+    Depends on vulnerable versions of postman-request
+    Depends on vulnerable versions of postman-sandbox
+    Depends on vulnerable versions of serialised-error
+    Depends on vulnerable versions of uuid
+    node_modules/postman-runtime
+    postman-sandbox  *
+    Depends on vulnerable versions of lodash
+    Depends on vulnerable versions of postman-collection
+    Depends on vulnerable versions of uvm
+    node_modules/postman-sandbox
+
+axios  1.0.0 - 1.19.0
+Severity: high
+Axios: Authentication Bypass via Prototype Pollution Gadget in `validateStatus` Merge Strategy - https://github.com/advisories/GHSA-w9j2-pvgh-6h63
+Axios: Incomplete Fix for CVE-2025-62718 — NO_PROXY Protection Bypassed via RFC 1122 Loopback Subnet (127.0.0.0/8) in Axios 1.15.0 - https://github.com/advisories/GHSA-pmwg-cvhr-8vh7
+Axios: Invisible JSON Response Tampering via Prototype Pollution Gadget in `parseReviver` - https://github.com/advisories/GHSA-3w6x-2g7m-8v23
+Axios: Null Byte Injection via Reverse-Encoding in AxiosURLSearchParams - https://github.com/advisories/GHSA-xhjh-pmcv-23jw
+Axios: CRLF Injection in multipart/form-data body via unsanitized blob.type in formDataToStream - https://github.com/advisories/GHSA-445q-vr5w-6q77
+Axios: no_proxy bypass via IP alias allows SSRF - https://github.com/advisories/GHSA-m7pr-hjqh-92cm
+Axios' HTTP adapter-streamed uploads bypass maxBodyLength when maxRedirects: 0 - https://github.com/advisories/GHSA-5c9x-8gcm-mpgx
+Axios: HTTP adapter streamed responses bypass maxContentLength - https://github.com/advisories/GHSA-vf2m-468p-8v99
+Axios: Prototype Pollution Gadgets - Response Tampering, Data Exfiltration, and Request Hijacking - https://github.com/advisories/GHSA-pf86-5x62-jrwf
+Axios: Header Injection via Prototype Pollution - https://github.com/advisories/GHSA-6chq-wfr3-2hj9
+Axios: XSRF Token Cross-Origin Leakage via Prototype Pollution Gadget in `withXSRFToken` Boolean Coercion - https://github.com/advisories/GHSA-xx6v-rp6x-q39c
+Axios has prototype pollution read-side gadgets in HTTP adapter that allow credential injection and request hijacking - https://github.com/advisories/GHSA-q8qp-cvcw-x6jj
+Axios: unbounded recursion in toFormData causes DoS via deeply nested request data - https://github.com/advisories/GHSA-62hf-57xw-28j9
+Axios: Regular Expression Denial of Service (ReDoS) via Cookie Name Injection - https://github.com/advisories/GHSA-hfxv-24rg-xrqf
+Allocation of Resources Without Limits or Throttling in Axios - https://github.com/advisories/GHSA-777c-7fjr-54vf
+Axios: Proxy-Authorization Credential Leak to Origin Server Across HTTP-to-HTTPS Redirect in Axios Node.js HTTP Adapter - https://github.com/advisories/GHSA-p92q-9vqr-4j8v
+Axios: Proxy-Authorization header leaks to redirect target when proxy is re-evaluated to direct connection - https://github.com/advisories/GHSA-j5f8-grm9-p9fc
+axios Vulnerable to Credential Theft and Response Hijacking via Prototype Pollution Gadget in Config Merge - https://github.com/advisories/GHSA-3g43-6gmg-66jw
+axios Vulnerable to Full Man-in-the-Middle via Prototype Pollution Gadget in `config.proxy` - https://github.com/advisories/GHSA-35jp-ww65-95wh
+axios has DoS & Header Injection via Prototype Pollution Read-Side Gadgets in axios merge functions - https://github.com/advisories/GHSA-898c-q2cr-xwhg
+axios's shouldBypassProxy does not recognize IPv4-mapped IPv6 addresses, allowing NO_PROXY bypass (incomplete fix for CVE-2025-62718) - https://github.com/advisories/GHSA-pjwm-pj3p-43mv
+Axios: Prototype pollution gadgets can alter axios request construction - https://github.com/advisories/GHSA-mmx7-hfxf-jppx
+Axios: Deep formToJSON Key Recursion Can Cause Denial of Service - https://github.com/advisories/GHSA-pmv8-rq9r-6j72
+Axios: HTTP/2 streamed uploads bypass `maxBodyLength` - https://github.com/advisories/GHSA-mwf2-3pr3-8698
+Axios: Nested axios option objects can consume polluted prototype values - https://github.com/advisories/GHSA-7q8q-rj6j-mhjq
+Axios: Fetch adapter `ReadableStream` uploads bypass `maxBodyLength` - https://github.com/advisories/GHSA-jqh4-m9w3-8hp9
+Axios: NO_PROXY bypass for 0.0.0.0 local addresses in axios - https://github.com/advisories/GHSA-f4gw-2p7v-4548
+Axios: Excessive recursion in formDataToJSON can cause denial of service - https://github.com/advisories/GHSA-42h9-826w-cgv3
+Axios: Prototype pollution gadget in fetch adapter can alter outbound requests - https://github.com/advisories/GHSA-vh66-26gq-q6x8
+Axios: Prototype-Pollution Gadget in the Default Instance Allows Inherited Object.prototype.method to Override HTTP Method - https://github.com/advisories/GHSA-9fr6-4gfg-395g
+Axios: ReDoS (O(N²)) in shouldBypassProxy host normalization, reachable via untrusted redirect Location - https://github.com/advisories/GHSA-mghh-pgcx-3jjj
+Axios: HTTP/2 adapter bypasses configured DNS lookup and proxy controls - https://github.com/advisories/GHSA-3pq3-5fj3-cg6v
+Axios: Denial of Service via Unhandled 'error' Event in HTTP/2 ClientHttp2Session Initialization - https://github.com/advisories/GHSA-542g-h47m-68v8
+Axios: Header Injection via Inherited headers After Minimal Interceptor - https://github.com/advisories/GHSA-j8rh-479h-cp32
+Axios: Fetch Adapter Header Injection via Inherited FormData getHeaders - https://github.com/advisories/GHSA-4hqw-qxg8-jxx2
+Axios: CIDR-form NO_PROXY entries are ignored, causing proxy exclusion bypass for internal IP ranges - https://github.com/advisories/GHSA-44g4-m2mj-wpvx
+fix available via `npm audit fix`
+node_modules/axios
+
+body-parser  2.0.0 - 2.3.0
+Severity: high
+body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement - https://github.com/advisories/GHSA-v422-hmwv-36x6
+body-parser vulnerable to Denial of Service via trailing bytes after a compressed request body - https://github.com/advisories/GHSA-27r3-jxmh-p828
+fix available via `npm audit fix`
+node_modules/body-parser
+
+brace-expansion  3.0.0 - 5.0.11
+Severity: high
+brace-expansion: Large numeric range defeats documented `max` DoS protection - https://github.com/advisories/GHSA-jxxr-4gwj-5jf2
+brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups - https://github.com/advisories/GHSA-3jxr-9vmj-r5cp
+brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash - https://github.com/advisories/GHSA-mh99-v99m-4gvg
+brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation - https://github.com/advisories/GHSA-rgw5-rvv9-x895
+brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service - https://github.com/advisories/GHSA-q2hr-2g5m-vwhr
+brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion - https://github.com/advisories/GHSA-qhr7-859c-m2p7
+brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion - https://github.com/advisories/GHSA-6j4f-fj2g-mc7p
+fix available via `npm audit fix`
+node_modules/brace-expansion
+
+csv-parse  <7.0.2
+Severity: moderate
+node-csv: Prototype replacement still reachable via columns path - https://github.com/advisories/GHSA-8cw4-87c7-c6xx
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/csv-parse
+
+flatted  <=3.4.1
+Severity: high
+flatted vulnerable to unbounded recursion DoS in parse() revive phase - https://github.com/advisories/GHSA-25h7-pfq9-p65f
+Prototype Pollution via parse() in NodeJS flatted - https://github.com/advisories/GHSA-rf6f-7fwh-wjgh
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/flatted
+  uvm  1.7.5 - 4.0.1
+  Depends on vulnerable versions of flatted
+  node_modules/uvm
+
+follow-redirects  <=1.15.11
+Severity: moderate
+follow-redirects leaks Custom Authentication Headers to Cross-Domain Redirect Targets - https://github.com/advisories/GHSA-r4q5-vmmm-2653
+fix available via `npm audit fix`
+node_modules/follow-redirects
+
+form-data  4.0.0 - 4.0.5
+Severity: high
+form-data: CRLF injection in form-data via unescaped multipart field names and filenames - https://github.com/advisories/GHSA-hmw2-7cc7-3qxx
+fix available via `npm audit fix`
+node_modules/form-data
+
+glob  9.0.0 - 14.0.1
+Severity: moderate
+Glob: AbortSignal cancellation bypass allows post-timeout filesystem traversal - https://github.com/advisories/GHSA-3g3m-2fjr-6pw4
+Depends on vulnerable versions of minimatch
+fix available via `npm audit fix --force`
+Will install c8@9.1.0, which is a breaking change
+node_modules/glob
+  test-exclude  >=7.0.0
+  Depends on vulnerable versions of glob
+  Depends on vulnerable versions of minimatch
+  node_modules/test-exclude
+    c8  >=10.0.0
+    Depends on vulnerable versions of test-exclude
+    node_modules/c8
+
+handlebars  3.0.0 - 4.7.9
+Severity: critical
+Handlebars.js has JavaScript Injection via AST Type Confusion by tampering @partial-block - https://github.com/advisories/GHSA-3mfm-83xf-c92r
+Handlebars.js has JavaScript Injection via AST Type Confusion - https://github.com/advisories/GHSA-2w6w-674q-4c4q
+Handlebars.js has Prototype Pollution Leading to XSS through Partial Template Injection - https://github.com/advisories/GHSA-2qvq-rjwj-gvw9
+Handlebars.js has a Prototype Method Access Control Gap via Missing __lookupSetter__ Blocklist Entry - https://github.com/advisories/GHSA-7rx3-28cr-v5wh
+Handlebars.js has a Property Access Validation Bypass in container.lookup - https://github.com/advisories/GHSA-442j-39wm-28r2
+Handlebars.js has JavaScript Injection via AST Type Confusion when passing an object as dynamic partial - https://github.com/advisories/GHSA-xhpv-hc6g-r9c6
+Handlebars.js has Denial of Service via Malformed Decorator Syntax in Template Compilation - https://github.com/advisories/GHSA-9cx6-37pm-9jff
+Handlebars.js has JavaScript Injection in CLI Precompiler via Unescaped Names and Options - https://github.com/advisories/GHSA-xjpj-3mr7-gcpf
+Handlebars: JavaScript Injection via Unsafe Inline Embedding of Precompiled Templates - https://github.com/advisories/GHSA-xw65-4hp5-5hc7
+Handlebars: JavaScript Injection via AST Type Confusion in compile (bypass of CVE-2026-33937) - https://github.com/advisories/GHSA-8r5x-fm3f-whwj
+Handlebars: JavaScript Injection via Own Property Check Bypass - https://github.com/advisories/GHSA-p8wg-vrv2-v86f
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/handlebars
+
+highcharts  12.0.0 - 12.6.1
+Severity: high
+Highcharts: `javascript:` URL in credits.href runs script on click - https://github.com/advisories/GHSA-5793-x2q3-c3q7
+Highcharts: dotted series.keys paths write to Object.prototype - https://github.com/advisories/GHSA-rmqc-xvr3-v46c
+Highcharts Core: `breadcrumbs.style` keys become SVG event-handler attributes - https://github.com/advisories/GHSA-35rr-xwfh-x789
+Highcharts Core: HTML text parsing falls back to unfiltered `innerHTML` during printing - https://github.com/advisories/GHSA-65hg-cf3f-5m39
+Highcharts Core: `javascript:` URL in an `xlink:href` attribute survives text filtering and reaches exported charts - https://github.com/advisories/GHSA-mw4f-gj5x-6xr4
+fix available via `npm audit fix`
+node_modules/highcharts
+
+ip-address  <=10.7.3
+Severity: high
+ip-address has XSS in Address6 HTML-emitting methods - https://github.com/advisories/GHSA-v2v4-37r5-5v8g
+ip-address: Address4 decodes leading-zero octets as decimal while resolvers decode them as octal, allowing SSRF and trust-boundary bypass - https://github.com/advisories/GHSA-mwp4-54f8-5fhr
+ip-address: Address6.isLinkLocal() recognizes fe80::/64 rather than fe80::/10, allowing SSRF and trust-boundary bypass to on-link hosts - https://github.com/advisories/GHSA-rpw4-54j3-4h4q
+ip-address: isInSubnet() and isHostInSubnet() compare addresses of different families as if they shared an address space, allowing an allowlist check to admit an address outside its range - https://github.com/advisories/GHSA-j6r3-76f7-8jcv
+ip-address: Address6 builds a parse diagnostic proportional to the input with no length bound, allowing a single long string to stall or crash the process - https://github.com/advisories/GHSA-h3mg-xc3c-68pw
+ip-address: Address6 matches a zone identifier in quadratic time ahead of its length limit, allowing a single long string to stall the process - https://github.com/advisories/GHSA-rxp7-6hxx-x8q5
+fix available via `npm audit fix`
+node_modules/ip-address
+
+joi  18.0.0 - 18.3.0
+Severity: high
+joi has an uncaught RangeError on deeply nested input through recursive `link()` schemas - https://github.com/advisories/GHSA-q7cg-457f-vx79
+joi: Prototype pollution via a `__proto__` language key in custom messages - https://github.com/advisories/GHSA-6w3j-5fw6-r9vr
+joi: object().rename() with a template target can set the validated object's prototype - https://github.com/advisories/GHSA-gg4h-3hg2-grpc
+joi messages compilation allows prototype replacement through __proto__ error codes - https://github.com/advisories/GHSA-wr44-6hxh-3jwq
+joi: Quadratic regular-expression backtracking in `Joi.string().isoDate()` - https://github.com/advisories/GHSA-6h2x-m376-mqjq
+joi: quadratic-time split in `string().email({ multiple: true })` allows denial of service - https://github.com/advisories/GHSA-4528-x5fx-h6hg
+fix available via `npm audit fix`
+node_modules/joi
+
+jose  3.0.0 - 4.15.4
+Severity: moderate
+jose vulnerable to resource exhaustion via specifically crafted JWE with compressed plaintext - https://github.com/advisories/GHSA-hhhv-q57g-882q
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/jose
+
+lodash  4.0.0 - 4.17.23
+Severity: high
+lodash vulnerable to Code Injection via `_.template` imports key names - https://github.com/advisories/GHSA-r5fr-rjxr-66jc
+Lodash has Prototype Pollution Vulnerability in `_.unset`, `_.omit`, and `_.pullAt` functions - https://github.com/advisories/GHSA-xxjr-mmjv-4gpg
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/lodash
+  postman-collection-transformer  2.2.0-beta.1 - 4.1.13
+  Depends on vulnerable versions of lodash
+  node_modules/postman-collection-transformer
+
+minimatch  7.0.0 - 11.0.0
+Severity: moderate
+minimatch has potential denial of service via globparts amplification - https://github.com/advisories/GHSA-g3hv-75wg-m249
+fix available via `npm audit fix --force`
+Will install c8@9.1.0, which is a breaking change
+node_modules/minimatch
+
+nedb  *
+Severity: critical
+Prototype Pollution in nedb - https://github.com/advisories/GHSA-339j-hqgx-qrrx
+Depends on vulnerable versions of binary-search-tree
+Depends on vulnerable versions of underscore
+No fix available
+node_modules/nedb
+
+node-forge  <=1.4.0
+Severity: high
+node-forge has ASN.1 Unbounded Recursion - https://github.com/advisories/GHSA-554w-wpv2-vw27
+node-forge has an Interpretation Conflict vulnerability via its ASN.1 Validator Desynchronization - https://github.com/advisories/GHSA-5gfm-wpxj-wjgq
+node-forge is vulnerable to ASN.1 OID Integer Truncation - https://github.com/advisories/GHSA-65ch-62r8-g69g
+Forge has a basicConstraints bypass in its certificate chain verification (RFC 5280 violation) - https://github.com/advisories/GHSA-2328-f5f3-gj25
+Forge has signature forgery in Ed25519 due to missing S > L check - https://github.com/advisories/GHSA-q67f-28xg-22rw
+Forge has Denial of Service via Infinite Loop in BigInteger.modInverse() with Zero Input - https://github.com/advisories/GHSA-5m6q-g25r-mvwx
+Forge has signature forgery in RSA-PKCS due to ASN.1 extra field   - https://github.com/advisories/GHSA-ppp5-5v6c-4jwp
+node-forge RSA PKCS#1 v1.5 signature verification accepts extra nested DigestAlgorithm elements - https://github.com/advisories/GHSA-86w9-cpqp-85rv
+Forge: ASN.1 OID first arc truncation in asn1.oidToDer - https://github.com/advisories/GHSA-4642-5mcj-2rqw
+Forge: Prototype Pollution in forge.http cookie handling via a malicious Set-Cookie - https://github.com/advisories/GHSA-6wvx-3r32-xmcg
+Forge: TLS client crash when the server sends no certificate - https://github.com/advisories/GHSA-525v-9gp9-w22h
+Forge: Regular expression denial of service in PEM decoding (pem.decode) - https://github.com/advisories/GHSA-7wch-p9px-956x
+Forge: Denial of Service via infinite loop in BigInteger.modInverse() with negative input (incomplete fix of CVE-2026-33891) - https://github.com/advisories/GHSA-h6cr-wjv9-3cpp
+Forge: verifyCertificateChain() removes trusted CA certificates with the same subject from the CA store - https://github.com/advisories/GHSA-4487-j8r4-4g2f
+Forge: AES-GCM authentication bypass via unvalidated tagLength option - https://github.com/advisories/GHSA-5cwg-6vw7-rj6p
+Forge: PKCS#12 MAC forgery and constant-key PBE via zero iteration count - https://github.com/advisories/GHSA-jc66-7q78-782g
+Forge: Denial of service in TLS record processing via a record interleaved with a fragmented handshake message - https://github.com/advisories/GHSA-8hrf-8g6f-7xwp
+Forge: Denial of service in TLS record processing via call stack exhaustion - https://github.com/advisories/GHSA-hqq3-7jhf-c5jx
+Forge: X.509 basicConstraints bypass in verifyCertificateChain() via deprecated extension OIDs 2.5.29.10 and 2.5.29.13 - https://github.com/advisories/GHSA-5x38-2vff-x55p
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/node-forge
+
+path-to-regexp  8.0.0 - 8.3.0
+Severity: high
+path-to-regexp vulnerable to Denial of Service via sequential optional groups - https://github.com/advisories/GHSA-j3q9-mxjg-w52f
+path-to-regexp vulnerable to Regular Expression Denial of Service via multiple wildcards - https://github.com/advisories/GHSA-27v5-c462-wpq7
+fix available via `npm audit fix`
+node_modules/path-to-regexp
+
+proxy-addr  1.1.0 - 2.0.7
+Severity: critical
+proxy-addr vulnerable to IP spoofing via IPv4-mapped IPv6 trust subnet - https://github.com/advisories/GHSA-jqcg-44mw-7w3h
+fix available via `npm audit fix`
+node_modules/proxy-addr
+
+qs  <=6.16.0
+Severity: moderate
+qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion - https://github.com/advisories/GHSA-6rw7-vpxm-498p
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+qs array-limit bypass via bracket-key comma parsing - https://github.com/advisories/GHSA-x5fp-wj9c-mxmx
+qs: Denial of Service via Attacker Controlled isBuffer - https://github.com/advisories/GHSA-4mjr-xmp4-gh2g
+qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS) - https://github.com/advisories/GHSA-6pq8-jhm2-2vcw
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/postman-request/node_modules/qs
+node_modules/postman-runtime/node_modules/qs
+node_modules/qs
+  postman-request  *
+  Depends on vulnerable versions of qs
+  Depends on vulnerable versions of uuid
+  node_modules/postman-request
+  node_modules/postman-runtime/node_modules/postman-request
+
+underscore  <=1.13.7
+Severity: critical
+Arbitrary Code Execution in underscore - https://github.com/advisories/GHSA-cf4h-3jhx-xvhq
+Underscore has unlimited recursion in _.flatten and _.isEqual, potential for DoS attack - https://github.com/advisories/GHSA-qpx9-hpmf-5gmw
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/httpntlm/node_modules/underscore
+node_modules/underscore
+  binary-search-tree  *
+  Depends on vulnerable versions of underscore
+  node_modules/binary-search-tree
+  httpntlm  1.5.0 - 1.8.13
+  Depends on vulnerable versions of underscore
+  node_modules/httpntlm
+
+uuid  <11.1.1
+Severity: moderate
+uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+fix available via `npm audit fix --force`
+Will install newman@4.6.1, which is a breaking change
+node_modules/serialised-error/node_modules/uuid
+node_modules/uuid
+  serialised-error  >=1.1.3
+  Depends on vulnerable versions of uuid
+  node_modules/serialised-error
+
+35 vulnerabilities (11 moderate, 19 high, 5 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
