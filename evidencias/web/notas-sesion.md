@@ -42,6 +42,8 @@ ZAP 2.17.0 instalado con `apt` en Kali. El proxy quedó en `localhost:8082` porq
 
 **Vulnerabilidad #2 (secreto JWT expuesto).** Completa. Captura: `#2-jwt-forjado.png`. Generé el token con Node, en local, sin pasar nunca por `/login`: `jwt.sign({user:"admin"}, "contraseñaMiguel", {expiresIn:"1h"})`. Con ZAP, `DELETE http://localhost:8080/api/v2/alcohol-consumptions-per-capita HTTP/1.1` más la cabecera `authorization: Bearer <token forjado>` devuelve `200 OK` y borra los datos. Demuestra que `verifyToken` acepta cualquier token firmado con el secreto filtrado, sin comprobar que haya habido un login real. Datos restaurados con `GET /api/v2/alcohol-consumptions-per-capita/loadInitialData` (150 registros).
 
+Nota del 6-nov, tras la mitigación: rotar el secreto en el código actual no basta por sí solo. El secreto viejo sigue siendo recuperable en el historial de git (commit `242c1a4`, confirmado con `git log --all -S "contraseñaMiguel"`), y el repo es público. No se reescribió el historial, porque afectaría a los clones de los compañeros; se trata el secreto viejo como comprometido para siempre, que es justo la razón de rotarlo y no solo corregir el valor en el HEAD actual.
+
 Con esto ya están las 3 vulnerabilidades obligatorias del apartado (b). Añado una cuarta como extra:
 
 **Vulnerabilidad #4 (NoSQL injection, A03:2021).** Completa. Capturas: `#4-filtro-normal.png` (`?nation=Spain`, 3 resultados, 342 bytes) y `#4-filtro-inyectado.png` (`?nation[$ne]=null`, 150 resultados, 17.148 bytes — el mismo tamaño que la colección sin filtrar, prueba de que el filtro se saltó por completo). El filtro se salta inyectando el operador `$ne` de NeDB por la query string, porque Express/`qs` admite sintaxis de objeto anidado en la URL y el valor llega sin sanear a `db.find()`. Es probable que el mismo patrón funcione en otros campos o endpoints (`date_year`, `country`... en JFM/TGG), no lo he probado todavía.
@@ -74,7 +76,7 @@ Cambios en `SOS-hardened` (rama `feat/pentesting-pai3`):
 
 Funcionalidad legítima verificada intacta: login con las credenciales nuevas devuelve un token válido, y ese token permite un `PUT` real (`200 OK`).
 
-Queda pendiente: mover las capturas a `PAI3-lab/evidencias/web/capturas/`, capturas del antes/después para el informe, generar el informe HTML de ZAP, exportar la sesión de ZAP, y commitear los cambios de `SOS-hardened`.
+**Informe HTML de ZAP** generado: `evidencias/web/2026-11-06-ZAP-Report-localhost.html` (plantilla "Risk and Confidence HTML"). Incluye algo de ruido de dominios de publicidad/tracking (adsrvr, doubleclick, facebook...) que se colaron en el historial por otras pestañas abiertas con el proxy puesto durante la sesión — la pestaña "Filter" del generador de ZAP solo filtra por riesgo/confianza, no por URL/sitio, así que no se pudo excluir sin borrar manualmente cada dominio del árbol de Sites. No afecta a los hallazgos de `localhost:8080`, que están igualmente documentados ahí y, sobre todo, en las capturas dedicadas de cada vulnerabilidad.
 
 ## Progreso de la sesión
 
