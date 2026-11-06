@@ -62,17 +62,11 @@ Los dos equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests m
 
 **Firewall (64 → 66 en Ubuntu, 64 → 65 en Debian).** Con UFW activo y la política "denegar todo lo entrante" (la que recomienda el CIS Benchmark), Lynis pasa a dar el firewall por configurado y el índice sube 1-2 puntos.
 
+Evidencias: `evidencias/sistemas/Ubuntu/` y `evidencias/sistemas/Debian/`, con los logs y `report.dat` de Lynis y capturas de las tres pasadas: `PrimerTest*.png` (inicial), `SegundoTestFirewall*.png` (tras el firewall) y `TercerTestHardeningCompleto*.png` (final).
+
 ### 1.3 Conclusiones
 
 Con un único script, idempotente y aplicable a ambas distribuciones, las dos máquinas pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos; la mayor mejora (6-7 puntos) viene de las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu y Debian les falta sobre todo detectar y registrar lo que ocurre en el sistema.
-
-Medir por fases también ha mostrado medidas que **no hacen lo que parece**: el banner en español y el umask en Debian. Ese es el valor de repetir la auditoría tras cada cambio en lugar de dar una medida por buena solo porque se ha aplicado. Para subir más el índice, el siguiente paso sería:
-
-1. Inicializar AIDE y definir reglas de auditd.
-2. Poner un banner bilingüe.
-3. Añadir la línea `UMASK` en Debian.
-4. Completar los parámetros sysctl que pide Lynis.
-5. Bastionar SSH.
 
 ## 2. Análisis y bastionado de navegador web
 
