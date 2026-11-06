@@ -1,0 +1,6 @@
+nation=Spain
+nation[$ne]=null
+nation[$gt]=
+nation[$regex]=.*
+nation[$exists]=true
+nation[$where]=1

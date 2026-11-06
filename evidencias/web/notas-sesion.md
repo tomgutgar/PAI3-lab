@@ -76,6 +76,8 @@ Cambios en `SOS-hardened` (rama `feat/pentesting-pai3`):
 
 Funcionalidad legítima verificada intacta: login con las credenciales nuevas devuelve un token válido, y ese token permite un `PUT` real (`200 OK`).
 
+**Payload propio** guardado en `web/payloads/nosql.txt` (los 5 operadores usados en el Fuzzer de la #4), como pide el README junto a `sqli.txt`/`xss.txt`.
+
 **Informe HTML de ZAP** generado: `evidencias/web/2026-11-06-ZAP-Report-localhost.html` (plantilla "Risk and Confidence HTML"). Incluye algo de ruido de dominios de publicidad/tracking (adsrvr, doubleclick, facebook...) que se colaron en el historial por otras pestañas abiertas con el proxy puesto durante la sesión — la pestaña "Filter" del generador de ZAP solo filtra por riesgo/confianza, no por URL/sitio, así que no se pudo excluir sin borrar manualmente cada dominio del árbol de Sites. No afecta a los hallazgos de `localhost:8080`, que están igualmente documentados ahí y, sobre todo, en las capturas dedicadas de cada vulnerabilidad.
 
 ## Progreso de la sesión
