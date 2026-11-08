@@ -1,0 +1,40 @@
+=== Pruebas XSS y Path Traversal contra SOS-hardened en local (http://localhost:8080), 08-11-2026 16:38 ===
+
+--- 1) Path Traversal: intentar leer /etc/passwd fuera de la carpeta web ---
+GET /../../../../etc/passwd                                    -> HTTP 404, no devuelve /etc/passwd
+GET /..%2f..%2f..%2f..%2fetc%2fpasswd                          -> HTTP 404, no devuelve /etc/passwd
+GET /%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd                    -> HTTP 404, no devuelve /etc/passwd
+GET /..%252f..%252f..%252fetc%252fpasswd                       -> HTTP 404, no devuelve /etc/passwd
+GET /....//....//....//etc/passwd                              -> HTTP 404, no devuelve /etc/passwd
+GET /api/v2/road-fatalities/..%2f..%2f..%2f..%2fetc%2fpasswd/2000 -> HTTP 404, no devuelve /etc/passwd
+GET /_app/..%2f..%2f..%2f..%2f..%2fetc%2fpasswd                -> HTTP 404, no devuelve /etc/passwd
+GET /about.html/..%2f..%2f..%2fetc%2fpasswd                    -> HTTP 404, no devuelve /etc/passwd
+
+--- 2) XSS reflejado: el payload en la URL vuelve sin escapar? ---
+GET /api/v2/road-fatalities?nation=%3Cscript%3Ealert%281%29%3C/script%3E -> HTTP 200, application/json; charset=utf-8, payload no aparece en la respuesta
+GET /%3Cscript%3Ealert%281%29%3C/script%3E                             -> HTTP 404, text/html, payload no aparece en la respuesta
+GET /api/v2/road-fatalities/%3Cscript%3Ealert%281%29%3C/script%3E/2000 -> HTTP 404, text/html, payload no aparece en la respuesta
+
+--- 3) XSS almacenado: guardar un registro cuyo campo nation es HTML con JavaScript ---
+Payload: <img src=x onerror=alert(document.domain)>
+(petición autenticada con un token válido obtenido en /login; desde la mitigación ya no se puede escribir sin token)
+POST /api/v2/road-fatalities -> HTTP 201 {"message":"Created: Recurso creado exitosamente."}
+GET de vuelta (se guarda tal cual, sin validar ni escapar):
+[{"nation":"<img src=x onerror=alert(document.domain)>","year":2099,"population_death_rate":99.9,"vehicle_death_rate":1,"distance_death_rate":1,"total_death":1,"income_level":"high","traffic_side":"right"}]
+
+--- Conclusión ---
+Path Traversal: probadas 8 variantes de escape de directorio (crudo, URL-encode simple y doble, ../../..,
+....// ) contra la raíz estática y contra rutas de la API. Las 8 devuelven 404. No vulnerable: SvelteKit
+sirve los estáticos con su propio handler (sin exponer el filesystem) y las rutas de API no toman ningún
+parámetro de ruta/fichero.
+
+XSS reflejado: el payload <script>alert(1)</script> en query string y en la URL no aparece en ninguna
+respuesta (ni crudo ni escapado): no hay eco de parámetros en HTML. No vulnerable por esta vía.
+
+XSS almacenado: un registro con nation = "<img src=x onerror=alert(document.domain)>" se guarda y se
+devuelve tal cual por la API, sin escapar ni validar el tipo de dato (igual que la inyección NoSQL de la
+vulnerabilidad #4: el filtro de entrada no comprueba tipos). Impacto real limitado en este frontend
+concreto: el valor solo se usa como etiqueta de categoría en gráficos (Highcharts/ECharts), no se inyecta
+en el DOM con innerHTML en el camino normal de renderizado, así que no se confirmó ejecución en
+navegador. Se reporta como "almacenamiento sin saneamiento" (mismo patrón que la vulnerabilidad #4),
+no como XSS confirmado con ejecución de JavaScript.

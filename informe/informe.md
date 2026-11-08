@@ -92,7 +92,11 @@ Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autent
 
 ### 4.2 Plan de pruebas y resultados
 
-**Trazabilidad del tráfico.** Con el navegador configurado para pasar por el proxy de ZAP (puerto 8082) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo — queda demostrado que todo el tráfico HTTP pasa por el proxy sin alterarse. No se importó el certificado raíz de ZAP porque la aplicación sirve por HTTP, no HTTPS; ese paso solo es necesario para interceptar tráfico cifrado.
+**Trazabilidad del tráfico.** Con el navegador configurado para pasar por el proxy de ZAP (puerto 8082) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, y queda demostrado así que todo el tráfico HTTP pasa por el proxy sin alterarse.
+
+Para demostrar también la trazabilidad en HTTPS, se importó el certificado raíz de ZAP en Firefox (Autoridades → Importar → "Confiar en esta CA para identificar sitios web") y se navegó con el proxy activo a `https://example.com`, un dominio externo ajeno a esta práctica usado únicamente para comprobar la intercepción. El certificado de esa página, visto desde el propio navegador, tiene como emisor "Zed Attack Proxy Root CA" en vez del emisor real del sitio, lo que confirma que ZAP genera un certificado propio por cada dominio y que el tráfico cifrado pasa igual por el proxy; la petición `https://example.com/` con `200 OK` queda también registrada en la pestaña History. Capturas: `#5-cert-zap-importado.png` (CA de ZAP en Autoridades), `#5-cert-zap-emisor-https.png` (certificado con emisor ZAP) y `#5-zap-history-https.png` (petición HTTPS en History).
+
+![Certificado de example.com emitido por Zed Attack Proxy Root CA](../evidencias/web/capturas/%235-cert-zap-emisor-https.png)
 
 **Metodología seguida**, en caja negra: reconocimiento con el Spider de ZAP para mapear las rutas de la aplicación (incluida la API, versionada en `v1` y `v2`, con tres recursos cada una); prueba de autenticación en cada endpoint de escritura, sin ninguna cabecera; localización del endpoint real de login observando el tráfico generado al enviar el formulario; y, una vez obtenido un token, análisis de su cabecera y crackeo del secreto de firma con una wordlist construida a partir de los nombres del equipo visibles en la propia web.
 
@@ -106,13 +110,29 @@ Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autent
 
 5 de 6 aceptan el borrado completo de la colección sin pedir ningún tipo de credencial.
 
+![DELETE sin autenticación aceptado](../evidencias/web/capturas/%231-acceso-sin-auth.png)
+
 **Vulnerabilidad 2 — Secreto de firma JWT débil y recuperable (A02:2021).** El único endpoint protegido (alcohol v2) usa un token JWT firmado con HS256. Tras obtener un token válido, se guardó y se atacó offline con `hashcat`: el diccionario genérico (`rockyou.txt`) no lo recupera, pero una wordlist de 360 combinaciones (palabras típicas de contraseña + nombres del equipo, sacados de la propia página de inicio) lo crackea en menos de un segundo. Con el secreto en mano se puede firmar un token válido para cualquier usuario sin pasar por el login. Aparte, el secreto sigue recuperable en el historial de git aunque se rote en el código actual (repo público); rotarlo en el HEAD no deshace la exposición pasada, por eso se trata como comprometido para siempre y no se intenta "arreglar" reescribiendo el historial.
+
+![Secreto JWT crackeado con hashcat](../evidencias/web/capturas/%232-hashcat-wordlist-crackeado.png)
 
 **Vulnerabilidad 3 — Credenciales por defecto (A07:2021).** El login de ese mismo endpoint acepta `admin`/`admin`.
 
+![Login con credenciales admin/admin](../evidencias/web/capturas/%233-login-response.png)
+
 **Vulnerabilidad 4 — Inyección NoSQL (A03:2021), adicional.** Los filtros de los `GET` de la API pasan los parámetros de la query string directamente a la base de datos sin comprobar su tipo. Fuzzing con ZAP sobre el parámetro `nation` con 5 operadores de NeDB (`$ne`, `$gt`, `$regex`, `$exists`, `$where`) muestra que los 5 se saltan el filtro por igual: la petición de control devuelve 342 bytes (3 resultados), y las 5 inyectadas devuelven 17.148 bytes, el tamaño exacto de la colección completa. El impacto en este endpoint concreto es bajo, porque es público y sin filtro ya devuelve todo; el riesgo real es que el mismo patrón de código, sin saneamiento de tipos, se repite en otros puntos de la aplicación, y que el operador `$where` podría usarse para ejecutar código si se le pasara una función en vez del valor simple usado en la prueba.
 
+![Fuzzer de ZAP con los 5 operadores NoSQL inyectados](../evidencias/web/capturas/%234-fuzzer-nosql-caja-negra.png)
+
 **Dependencias desactualizadas (A06:2021), adicional.** `npm audit` reporta 35 vulnerabilidades (11 moderate, 19 high, 5 critical). La más relevante es `nedb`, la propia base de datos de la aplicación en producción: tiene una vulnerabilidad crítica de Prototype Pollution sin parche disponible. El resto de las críticas y altas vienen de dependencias de testing (`newman`, `postman-*`), no de producción.
+
+**SQL Injection, XSS y Path Traversal (vectores que cita el enunciado).** Se probaron también estos tres vectores, aunque la aplicación no usa SQL (NeDB no es relacional, por lo que la inyección equivalente es la NoSQL ya descrita en la vulnerabilidad 4):
+
+- *Path Traversal*: 8 variantes de escape de directorio (`../../..`, codificación simple y doble, `....//`) contra la carpeta estática y contra rutas de la API. Las 8 devuelven `404`. No vulnerable: SvelteKit sirve los estáticos con su propio manejador, sin exponer el sistema de ficheros, y las rutas de la API no toman ningún parámetro de ruta o nombre de fichero.
+- *XSS reflejado*: el payload `<script>alert(1)</script>` en parámetros de consulta y en la URL no aparece en ninguna respuesta. No hay eco de parámetros en HTML, así que no es vulnerable por esta vía.
+- *XSS almacenado*: un registro con `nation = "<img src=x onerror=alert(document.domain)>"` se guarda y se devuelve igual por la API, sin validar el tipo de dato, el mismo patrón de la vulnerabilidad 4. El impacto queda limitado porque el frontend usa ese campo solo como etiqueta de categoría en gráficos (Highcharts/ECharts) y no se llegó a confirmar la ejecución del script en el navegador; se reporta como almacenamiento sin saneamiento, no como XSS confirmado.
+
+Evidencia de los tres en `evidencias/web/xss-path-traversal-2026-11-08.log`.
 
 Evidencia (peticiones, respuestas, resultados de hashcat y log de `npm audit`) en `evidencias/web/capturas/` y `evidencias/web/npm-audit-2026-11-06.log`; informe HTML generado por ZAP en `evidencias/web/2026-11-06-ZAP-Report-localhost.html` y exportación del tráfico capturado en `evidencias/web/zap-history-export.csv`; notas detalladas en `evidencias/web/notas-sesion.md`.
 
@@ -133,11 +153,18 @@ Se comprobó también que la funcionalidad legítima sigue intacta: el login con
 
 ### 4.4 Conclusiones
 
-El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos — por eso la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Queda como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica.
+El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos, así que la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Queda como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica.
 
 ## Referencias
 
 _(no cuentan para las 15 páginas)_
+
+- OWASP. *OWASP Top 10:2021*. https://owasp.org/Top10/
+- CIS (Center for Internet Security). *CIS Benchmarks*. https://www.cisecurity.org/cis-benchmarks
+- NIST. *SP 800-115: Technical Guide to Information Security Testing and Assessment*. https://csrc.nist.gov/pubs/sp/800/115/final
+- España. Real Decreto 311/2022, de 3 de mayo, por el que se regula el Esquema Nacional de Seguridad (ENS), categoría Alta. CCN-CERT. https://www.ccn-cert.cni.es/
+- CISOfy. *Lynis*, herramienta de auditoría de seguridad de sistemas. https://cisofy.com/lynis/
+- OWASP. *OWASP ZAP*, versión 2.17. https://www.zaproxy.org/
 
 ## Anexos
 
