@@ -8,7 +8,7 @@ Modelo: Google Pixel 9 Pro    Android: 17 (parche 2026-10-05)    Herramienta de 
 |---|--------|:---:|:---:|------------|
 | A1 | Orígenes desconocidos desactivados | Sí | Sí | — |
 | A2 | Sin root ni kernel modificado | Sí | Sí | — |
-| A3 | Sistema y navegador al día | Sí | Sí | — |
+| A3 | Sistema y navegador al día | Sí | Sí | — (sistema sin actualizaciones pendientes y Chrome al día en Play Store) |
 | A4 | Sin Wi-Fi abiertas / WEP / WPA-basic | Sí | Sí | — |
 | A5 | Bluetooth apagado en sesión corporativa | No | Sí | Bluetooth apagado desde ajustes rápidos |
 | B1 | Sin malware ni APKs sospechosas | Sí | Sí | — |
@@ -23,7 +23,7 @@ Modelo: Google Pixel 10    Android: 17 (parche 2026-10-05)    Herramienta de esc
 |---|--------|:---:|:---:|------------|
 | A1 | Orígenes desconocidos desactivados | Sí | Sí | — |
 | A2 | Sin root ni kernel modificado | Sí | Sí | — |
-| A3 | Sistema y navegador al día | Sí | Sí | — |
+| A3 | Sistema y navegador al día | No | Sí | Sistema al día (parche 2026-10-05, sin actualizaciones pendientes), pero Chrome tenía una actualización pendiente en Play Store: actualizado desde Play Store |
 | A4 | Sin Wi-Fi abiertas / WEP / WPA-basic | No | Sí | Se olvidaron 6 redes guardadas sin cifrado (Andared_IoT, Carrefour-Conecta, QUIRONSALUD, Quironsalud_Invitados, VuelingWi-Fi y la variante abierta de paradores) |
 | A5 | Bluetooth apagado en sesión corporativa | Sí | Sí | — |
 | B1 | Sin malware ni APKs sospechosas | Sí | Sí | — |

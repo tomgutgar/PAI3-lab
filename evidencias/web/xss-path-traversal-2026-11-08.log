@@ -32,9 +32,8 @@ XSS reflejado: el payload <script>alert(1)</script> en query string y en la URL 
 respuesta (ni crudo ni escapado): no hay eco de parámetros en HTML. No vulnerable por esta vía.
 
 XSS almacenado: un registro con nation = "<img src=x onerror=alert(document.domain)>" se guarda y se
-devuelve tal cual por la API, sin escapar ni validar el tipo de dato (igual que la inyección NoSQL de la
-vulnerabilidad #4: el filtro de entrada no comprueba tipos). Impacto real limitado en este frontend
-concreto: el valor solo se usa como etiqueta de categoría en gráficos (Highcharts/ECharts), no se inyecta
-en el DOM con innerHTML en el camino normal de renderizado, así que no se confirmó ejecución en
-navegador. Se reporta como "almacenamiento sin saneamiento" (mismo patrón que la vulnerabilidad #4),
-no como XSS confirmado con ejecución de JavaScript.
+devuelve tal cual por la API. Es un string, así que pasa el control de tipo, pero su contenido no se
+valida ni se limpia. El frontend lo muestra en tablas con Svelte (escapa el texto por defecto) y en
+gráficos con Highcharts (filtra etiquetas y atributos peligrosos); no se confirmó ejecución en el
+navegador. Se reporta como "entrada sin sanear", no como XSS confirmado. Prueba hecha con token válido
+sobre la versión ya corregida: sigue abierto tras la mitigación.

@@ -16,8 +16,8 @@ PAI-3 VULNAWEB · Security Team Nº ___ · Integrantes: ___ · Fecha: ___
 _Media página. Una frase de resultado por parte._
 
 - Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu y de 64 a 71 en Debian, ambos por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd). _(Fedora pendiente.)_
-- Web (Miguel): de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido.
-- Móvil: los 2 Pixel auditados no tenían root ni malware, pero cada uno fallaba en un punto distinto de la política (Bluetooth encendido uno, Wi-Fi abiertas guardadas el otro); ambos corregidos y verificados por ADB.
+- Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido.
+- Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro), corregidos y verificados después.
 
 ## 1. Auditoría de sistemas informáticos
 
@@ -79,7 +79,7 @@ Con un único script, idempotente y aplicable a ambas distribuciones, las dos m�
 
 ### 3.1 Descripción del sistema analizado y herramientas
 
-Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **Pixel 9 Pro** y un **Pixel 10**, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política (A1-A5, B1-B3) mediante **ADB** (Android Debug Bridge), con un script propio (`movil/auditar_android.sh`) que vuelca por consola el estado de cada punto comprobable, y **Malwarebytes** como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
+Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **Pixel 9 Pro** y un **Pixel 10**, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron 7 de los 8 puntos de la política (A1-A5, B1 y B3; el B2 es opcional y no se comprobó) mediante **ADB** (Android Debug Bridge), con un script propio (`movil/auditar_android.sh`) que vuelca por consola el estado de cada punto comprobable, y **Malwarebytes** como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
 
 ### 3.2 Plan de pruebas y resultados
 
@@ -91,20 +91,28 @@ Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **
 |---|:---:|:---:|
 | A1 — Orígenes desconocidos desactivados | Cumple | Cumple |
 | A2 — Sin root | Cumple | Cumple |
-| A3 — Sistema al día | Cumple | Cumple |
+| A3 — Sistema y navegador al día | Cumple | **No cumplía** (Chrome) |
 | A4 — Sin Wi-Fi inseguras | Cumple | **No cumplía** |
 | A5 — Bluetooth apagado | **No cumplía** | Cumple |
 | B1 — Sin malware | Cumple | Cumple |
 | B2 — Sin conexiones de fondo no autorizadas | No comprobado (opcional) | No comprobado (opcional) |
 | B3 — Sin permisos peligrosos | Cumple | Cumple |
 
-En el Pixel 9 Pro el único fallo fue el Bluetooth encendido, corregido apagándolo. En el Pixel 10, el fallo fue A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después. El punto B2 (conexiones de fondo) es opcional según el README de esta parte y no se comprobó, al no usarse PCAPdroid.
+El punto A1 se comprobó a mano en cada móvil (Ajustes → Instalar aplicaciones desconocidas: ninguna app con el permiso concedido) y el A3 en Ajustes → Actualizaciones de software y en la ficha de Chrome en Play Store, porque el script solo da el nivel de parche.
 
-Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/`, capturas del escaneo de Malwarebytes en ambas carpetas.
+En el Pixel 9 Pro el único fallo fue el Bluetooth encendido, corregido apagándolo. En el Pixel 10 hubo dos. El primero, A3: el sistema estaba al día, pero Chrome tenía una actualización pendiente en Play Store, y se corrigió actualizándolo (la ficha pasa de "Actualizar" a "Abrir"). El segundo, A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después. El punto B2 (conexiones de fondo) es opcional según el README de esta parte y no se comprobó, al no usarse PCAPdroid.
+
+Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/`; capturas del escaneo de Malwarebytes, del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
+
+![Pixel 10: Chrome con actualización pendiente en Play Store (A3)](../evidencias/movil/pixel10-antes/a3-chrome-desactualizado.png)
+
+![Escaneo de Malwarebytes en el Pixel 9 Pro, sin amenazas](../evidencias/movil/pixel9pro-antes/malwarebytes-scan.png)
+
+![Escaneo de Malwarebytes en el Pixel 10, sin amenazas](../evidencias/movil/pixel10-antes/malwarebytes-scan.png)
 
 ### 3.3 Conclusiones
 
-Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero cada uno tenía un fallo de higiene distinto: uno con el Bluetooth innecesariamente encendido y el otro arrastrando redes Wi-Fi abiertas de sitios públicos visitados meses atrás. Ninguno de los dos es un fallo grave por sí solo, pero ambos amplían la superficie de ataque (Bluetooth activo = más vectores de conexión no solicitada; redes abiertas guardadas = reconexión automática a una red potencialmente hostil sin que el usuario lo note) y son fáciles de arrastrar sin darse cuenta en el uso diario. La recomendación práctica es revisar estos dos puntos periódicamente, no solo una vez.
+Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero los dos tenían fallos de higiene: el Pixel 9 Pro con el Bluetooth encendido sin necesidad, y el Pixel 10 con el navegador sin actualizar y arrastrando redes Wi-Fi abiertas de sitios públicos. Ninguno es grave por sí solo, pero todos amplían la superficie de ataque: con el Bluetooth activo hay más vías de conexión no solicitada, un navegador desactualizado puede tener vulnerabilidades ya públicas, y una red abierta guardada permite que el móvil se reconecte solo a una red que puede estar controlada por un atacante. Son fallos que se acumulan con el uso diario sin que el usuario lo note, así que conviene revisarlos de forma periódica y no solo una vez.
 
 ## 4. Auditoría de sistema web
 
@@ -114,7 +122,7 @@ El objetivo es SOS-hardened, un fork propio del proyecto SOS2526-11 (asignatura 
 
 La guía de la asignatura propone DVWA como objetivo. Se usa SOS-hardened en su lugar porque cumple igual la norma de "solo entornos propios o de pruebas" y porque una revisión inicial del código ya mostraba fallos reales, sin necesidad de un laboratorio construido a propósito.
 
-Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autenticación JWT; frontend SvelteKit. Herramientas: OWASP ZAP 2.17 como proxy de interceptación y para las pruebas manuales (Spider, Requester), y `hashcat` (modo 16500, JWT) para comprobar la fortaleza del secreto de firma.
+Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autenticación JWT; frontend SvelteKit. Herramientas: OWASP ZAP 2.17 como proxy de interceptación y para las pruebas (Spider, Requester y Fuzzer), y `hashcat` (modo 16500, JWT) para comprobar la fortaleza del secreto de firma.
 
 ### 4.2 Plan de pruebas y resultados
 
@@ -156,7 +164,7 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 
 - *Path Traversal*: 8 variantes de escape de directorio (`../../..`, codificación simple y doble, `....//`) contra la carpeta estática y contra rutas de la API. Las 8 devuelven `404`. No vulnerable: SvelteKit sirve los estáticos con su propio manejador, sin exponer el sistema de ficheros, y las rutas de la API no toman ningún parámetro de ruta o nombre de fichero.
 - *XSS reflejado*: el payload `<script>alert(1)</script>` en parámetros de consulta y en la URL no aparece en ninguna respuesta. No hay eco de parámetros en HTML, así que no es vulnerable por esta vía.
-- *XSS almacenado*: un registro con `nation = "<img src=x onerror=alert(document.domain)>"` se guarda y se devuelve igual por la API, sin validar el tipo de dato, el mismo patrón de la vulnerabilidad 4. El impacto queda limitado porque el frontend usa ese campo solo como etiqueta de categoría en gráficos (Highcharts/ECharts) y no se llegó a confirmar la ejecución del script en el navegador; se reporta como almacenamiento sin saneamiento, no como XSS confirmado.
+- *XSS almacenado*: un registro con `nation = "<img src=x onerror=alert(document.domain)>"` se guarda y se devuelve igual por la API: el valor es un string, así que pasa el control de tipo, pero nadie valida ni limpia su contenido. El frontend lo muestra en tablas con Svelte, que escapa el texto por defecto, y en gráficos con Highcharts, que filtra etiquetas y atributos peligrosos; no se llegó a confirmar la ejecución del script en el navegador, así que se reporta como entrada sin sanear y no como XSS confirmado. La prueba se hizo con un token válido sobre la versión ya corregida, por lo que este punto sigue abierto después de la mitigación (ver 4.4).
 
 Evidencia de los tres en `evidencias/web/xss-path-traversal-2026-11-08.log`.
 
@@ -179,7 +187,7 @@ Se comprobó también que la funcionalidad legítima sigue intacta: el login con
 
 ### 4.4 Conclusiones
 
-El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos, así que la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Queda como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica.
+El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos, así que la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Quedan como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica, y la validación del contenido de los campos de texto en los `POST`/`PUT`, que hoy aceptan HTML y solo están protegidos por el escapado del frontend.
 
 ## Referencias
 
