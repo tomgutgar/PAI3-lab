@@ -1,0 +1,196 @@
+# A2 root (su debe estar vacio)
+# A2 verified boot (green) / bootloader (1)
+green
+1
+# A3 parche de seguridad
+2026-10-05
+# A3 version de Android
+17
+# A4 redes wifi guardadas
+Network Id      SSID                         Security type
+0            Andared                          wpa2-psk
+0            Andared                          wpa3-sae^
+1            Andared_IoT                      open
+1            Andared_IoT                      owe^
+2            Carrefour-Conecta                open
+2            Carrefour-Conecta                owe^
+3            Livebox7-789E-WiFi7              wpa3-sae
+4            MOVISTAR_1495                    wpa2-psk
+4            MOVISTAR_1495                    wpa3-sae^
+5            MOVISTAR_1495_Jaime              wpa2-psk
+5            MOVISTAR_1495_Jaime              wpa3-sae^
+6            MOVISTAR_534F                    wpa2-psk
+6            MOVISTAR_534F                    wpa3-sae^
+7            MOVISTAR_PLUS_1495               wpa2-psk
+7            MOVISTAR_PLUS_1495               wpa3-sae^
+8            QUIRONSALUD                      open
+8            QUIRONSALUD                      owe^
+9            Quironsalud_Invitados            open
+9            Quironsalud_Invitados            owe^
+10           VuelingWi-Fi                     open
+10           VuelingWi-Fi                     owe^
+11           WIFIVALME                        wpa2-psk
+11           WIFIVALME                        wpa3-sae^
+12           alternative-wifi-etsi            wpa2-psk
+12           alternative-wifi-etsi            wpa3-sae^
+13           iPhone de Alex                   wpa2-psk
+13           iPhone de Alex                   wpa3-sae^
+14           paradores                        wpa2-psk
+14           paradores                        wpa3-sae^
+15           paradores                        open
+15           paradores                        owe^
+# A5 bluetooth (0 = apagado)
+0
+# B1 apps de terceros y quien las instalo
+package:com.bestringtonesandsounds.best.classical.ringtones  installer=com.android.vending
+package:com.booking.hotelmanager  installer=com.android.vending
+package:www.ingdirect.nativeframe  installer=com.android.vending
+package:com.revolut.revolut  installer=com.android.vending
+package:com.teacapps.barcodescanner  installer=com.android.vending
+package:com.simyo  installer=com.android.vending
+package:com.bodeboca.bodeboca  installer=com.android.vending
+package:de.bitiba  installer=com.android.vending
+package:com.comuto  installer=com.android.vending
+package:com.oplus.melody  installer=com.android.vending
+package:com.hp.printercontrol  installer=com.android.vending
+package:com.tagus  installer=com.android.vending
+package:com.iphonedroid.marca  installer=com.android.vending
+package:com.adeo.android.app  installer=com.android.vending
+package:com.keepa.mobile  installer=com.android.vending
+package:com.google.android.apps.walletnfcrel  installer=com.android.vending
+package:intl.costco.com.mobile.spain  installer=com.android.vending
+package:com.ingka.ikea.app  installer=com.android.vending
+package:com.pdfeditor.pdfeditorandriod  installer=com.android.vending
+package:com.hp.android.printservice  installer=com.android.vending
+package:com.signnow.android  installer=com.android.vending
+package:com.mo2o.vueling  installer=com.android.vending
+package:es.larazon  installer=com.android.vending
+package:com.yazio.android  installer=com.android.vending
+package:es.muface.MufaceMovil  installer=com.android.vending
+package:com.microsoft.teams  installer=com.android.vending
+package:com.ubercab  installer=com.android.vending
+package:com.privatesportshop.app.prod  installer=com.android.vending
+package:net.inverline.bancosabadell.officelocator.android  installer=com.android.vending
+package:es.awg.movilidadEOL  installer=com.android.vending
+package:com.amazon.mShop.android.shopping  installer=com.android.vending
+package:com.dencreak.dlcalculator  installer=com.android.vending
+package:com.gi.elmundo.main  installer=com.android.vending
+package:net.inverline.bancosabadell.officelocator.activobank  installer=com.android.vending
+package:com.basicfit.trainingApp  installer=com.android.vending
+package:com.amazon.dee.app  installer=com.android.vending
+package:com.wallapop  installer=com.android.vending
+package:com.adobe.reader  installer=com.android.vending
+package:com.backmarket  installer=com.android.vending
+package:es.plus.yomvi  installer=com.android.vending
+package:com.pdfreader.creatorpro  installer=com.android.vending
+package:com.google.android.apps.docs.editors.sheets  installer=com.android.vending
+package:com.elconfidencial.rss  installer=com.android.vending
+package:com.viamedsalud.app  installer=com.android.vending
+package:epub.reader  installer=com.android.vending
+package:com.smeducamos.aprendizaje  installer=com.android.vending
+package:com.geoactio.tussam  installer=com.android.vending
+package:es.rae.dle  installer=com.android.vending
+package:com.guardian  installer=com.android.vending
+package:com.cabify.rider  installer=com.android.vending
+package:com.emasesa.appclientes  installer=com.android.vending
+package:com.booking  installer=com.android.vending
+package:com.muba.anuncios  installer=com.android.vending
+package:es.aeat.pin24h  installer=com.android.vending
+package:com.ubercab.eats  installer=com.android.vending
+package:com.munrodev.crfmobile  installer=com.android.vending
+package:es.o2.mio2  installer=com.android.vending
+package:es.mediamarkt.app  installer=com.android.vending
+package:com.netflix.mediaclient  installer=com.android.vending
+package:com.alibaba.aliexpresshd  installer=com.android.vending
+package:com.Generali.AppMaster  installer=com.android.vending
+package:com.vidibond.pccomponentes2  installer=com.android.vending
+package:santi.wodbuster  installer=com.android.vending
+package:com.db.coo.secureauthenticator  installer=com.android.vending
+package:com.canva.editor  installer=com.android.vending
+package:com.wordreference  installer=com.android.vending
+package:rge.tech.usuarios  installer=com.android.vending
+package:com.movistar.base  installer=com.android.vending
+package:com.google.earth  installer=com.android.vending
+package:com.glovo  installer=com.android.vending
+package:es.juntadeandalucia.ced.senecadroid  installer=com.android.vending
+package:com.radmas.iyc.sevillatuciudad  installer=com.android.vending
+package:com.maize.digitalClock  installer=com.android.vending
+package:com.paypal.android.p2pmobile  installer=com.android.vending
+package:com.tripadvisor.tripadvisor  installer=com.android.vending
+package:uk.gov.HomeOffice.ho3  installer=com.android.vending
+package:com.ebay.mobile  installer=com.android.vending
+package:com.google.android.apps.translate  installer=com.android.vending
+package:com.airbnb.android  installer=com.android.vending
+package:es.zurich.zhp  installer=com.android.vending
+package:fr.pixpay  installer=com.android.vending
+package:com.google.android.apps.classroom  installer=com.android.vending
+package:com.whatsapp  installer=com.android.vending
+package:com.adidas.app  installer=com.android.vending
+package:com.miravia.android  installer=com.android.vending
+package:com.abjasoft.fanremote  installer=com.android.vending
+package:linea.directa  installer=com.android.vending
+package:org.telegram.messenger  installer=com.android.vending
+package:com.google.android.apps.docs.editors.slides  installer=com.android.vending
+package:com.cisco.wx2.android  installer=com.android.vending
+package:com.amazon.avod.thirdpartyclient  installer=com.android.vending
+package:com.google.android.safetycore  installer=com.android.vending
+package:com.outsystemsenterprise.sonae.MyWorten  installer=com.android.vending
+package:com.filmin.filmin  installer=com.android.vending
+package:com.edreams.travel  installer=com.android.vending
+package:com.elpais.elpais  installer=com.android.vending
+package:es.ingenia.giahsa.consumos  installer=com.android.vending
+package:es.gob.dehu  installer=com.android.vending
+package:es.juntadeandalucia.msspa.saludandalucia  installer=com.android.vending
+package:com.azure.authenticator  installer=com.android.vending
+package:com.google.android.apps.subscriptions.red  installer=com.android.vending
+package:com.qaracter.asybapp  installer=com.android.vending
+package:com.dropbox.android  installer=com.android.vending
+package:com.google.ar.lens  installer=com.android.vending
+package:com.google.android.apps.authenticator2  installer=com.android.vending
+package:com.adobe.fas  installer=com.android.vending
+package:es.rtve.playradio  installer=com.android.vending
+package:com.google.android.apps.docs.editors.docs  installer=com.android.vending
+package:sign.fill.pdf  installer=com.android.vending
+package:com.db.pbc.mibanco  installer=com.android.vending
+package:com.kanocutandshave  installer=com.android.vending
+package:com.google.android.apps.googleassistant  installer=com.android.vending
+package:com.mi.android.globalFileexplorer  installer=com.android.vending
+package:com.movistar.android.mimovistar.es  installer=com.android.vending
+package:com.carrefour.carrefourPass  installer=com.android.vending
+package:com.shazam.android  installer=com.android.vending
+package:com.vocento.abcsevilla  installer=com.android.vending
+package:es.mercadona.tienda  installer=com.android.vending
+package:es.awg.movilidadEOL.mr  installer=com.android.vending
+package:juntadeandalucia.ced.pasen  installer=com.android.vending
+package:com.fitbit.FitbitMobile  installer=com.android.vending
+package:com.einnovation.temu  installer=com.android.vending
+package:com.twitter.android  installer=com.android.vending
+package:us.zoom.videomeetings  installer=com.android.vending
+package:pdf.sign.protect  installer=com.android.vending
+package:es.vithas.app.pro  installer=com.android.vending
+package:com.verisure.securitasdirect.owa  installer=com.android.vending
+package:de.zooplus  installer=com.android.vending
+package:com.divisait.quironsalud  installer=com.android.vending
+package:com.sixnationsrugby  installer=com.android.vending
+package:com.google.android.keep  installer=com.android.vending
+package:com.dgt.midgt  installer=com.android.vending
+package:com.google.android.contactkeys  installer=com.android.vending
+package:com.amazon.mp3  installer=com.android.vending
+package:com.justeat.app.es  installer=com.android.vending
+package:com.openai.chatgpt  installer=com.android.vending
+package:fynkus.administracionfincas  installer=com.android.vending
+package:es.doctoralia  installer=com.android.vending
+package:es.eltiempo.weatherapp  installer=com.android.vending
+package:com.mutua.mutua  installer=com.android.vending
+package:com.canitas.chatmedico  installer=com.android.vending
+# B3 servicios de accesibilidad
+null
+# B3 lectores de notificaciones
+com.google.android.apps.dreamliner/com.google.android.apps.dreamliner.notification.DreamlinerNotificationService:com.google.android.projection.gearhead/com.google.android.gearhead.notifications.SharedNotificationListenerManager$ListenerService:com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationListenerService:com.google.android.apps.nexuslauncher/com.android.launcher3.notification.NotificationListener:com.google.android.odad/com.google.android.apps.miphone.odad.notification.impl.NotificationService:com.google.android.googlequicksearchbox/com.google.android.apps.gsa.notificationlistener.GsaNotificationListenerService
+# B3 permiso de superposicion (overlay)
+com.google.android.apps.camera.services
+com.google.android.odad
+com.google.android.dialer
+com.google.android.googlequicksearchbox
+# Extra cifrado
+encrypted

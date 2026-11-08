@@ -17,6 +17,7 @@ _Media página. Una frase de resultado por parte._
 
 - Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu y de 64 a 71 en Debian, ambos por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd). _(Fedora pendiente.)_
 - Web (Miguel): de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido.
+- Móvil: los 2 Pixel auditados no tenían root ni malware, pero cada uno fallaba en un punto distinto de la política (Bluetooth encendido uno, Wi-Fi abiertas guardadas el otro); ambos corregidos y verificados por ADB.
 
 ## 1. Auditoría de sistemas informáticos
 
@@ -77,8 +78,33 @@ Con un único script, idempotente y aplicable a ambas distribuciones, las dos m�
 ## 3. Auditoría de sistema móvil
 
 ### 3.1 Descripción del sistema analizado y herramientas
+
+Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **Pixel 9 Pro** y un **Pixel 10**, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política (A1-A5, B1-B3) mediante **ADB** (Android Debug Bridge), con un script propio (`movil/auditar_android.sh`) que vuelca por consola el estado de cada punto comprobable, y **Malwarebytes** como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
+
 ### 3.2 Plan de pruebas y resultados
+
+**Procedimiento** en cada móvil: activar Opciones de desarrollador y Depuración USB, volcado `antes` con el script, escaneo con Malwarebytes, corrección de lo que falle, volcado `despues`, y desactivar la Depuración USB al terminar.
+
+**Resultados** (detalle completo en `movil/checklist.md`):
+
+| Punto | Pixel 9 Pro | Pixel 10 |
+|---|:---:|:---:|
+| A1 — Orígenes desconocidos desactivados | Cumple | Cumple |
+| A2 — Sin root | Cumple | Cumple |
+| A3 — Sistema al día | Cumple | Cumple |
+| A4 — Sin Wi-Fi inseguras | Cumple | **No cumplía** |
+| A5 — Bluetooth apagado | **No cumplía** | Cumple |
+| B1 — Sin malware | Cumple | Cumple |
+| B2 — Sin conexiones de fondo no autorizadas | No comprobado (opcional) | No comprobado (opcional) |
+| B3 — Sin permisos peligrosos | Cumple | Cumple |
+
+En el Pixel 9 Pro el único fallo fue el Bluetooth encendido, corregido apagándolo. En el Pixel 10, el fallo fue A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después. El punto B2 (conexiones de fondo) es opcional según el README de esta parte y no se comprobó, al no usarse PCAPdroid.
+
+Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/`, capturas del escaneo de Malwarebytes en ambas carpetas.
+
 ### 3.3 Conclusiones
+
+Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero cada uno tenía un fallo de higiene distinto: uno con el Bluetooth innecesariamente encendido y el otro arrastrando redes Wi-Fi abiertas de sitios públicos visitados meses atrás. Ninguno de los dos es un fallo grave por sí solo, pero ambos amplían la superficie de ataque (Bluetooth activo = más vectores de conexión no solicitada; redes abiertas guardadas = reconexión automática a una red potencialmente hostil sin que el usuario lo note) y son fáciles de arrastrar sin darse cuenta en el uso diario. La recomendación práctica es revisar estos dos puntos periódicamente, no solo una vez.
 
 ## 4. Auditoría de sistema web
 

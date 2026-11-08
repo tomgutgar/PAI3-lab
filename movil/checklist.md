@@ -1,14 +1,31 @@
 # Checklist de la política (antes/después por móvil)
 
-Modelo: ____    Android: ____    Herramienta de escaneo: Malwarebytes / Koodous
+## Móvil 1
+
+Modelo: Google Pixel 9 Pro    Android: 17 (parche 2026-10-05)    Herramienta de escaneo: Malwarebytes
 
 | # | Medida | Cumple antes | Cumple después | Corrección aplicada |
 |---|--------|:---:|:---:|------------|
-| A1 | Orígenes desconocidos desactivados | | | |
-| A2 | Sin root ni kernel modificado | | | |
-| A3 | Sistema y navegador al día | | | |
-| A4 | Sin Wi-Fi abiertas / WEP / WPA-basic | | | |
-| A5 | Bluetooth apagado en sesión corporativa | | | |
-| B1 | Sin malware ni APKs sospechosas | | | |
-| B2 | Sin conexiones de fondo no autorizadas | | | |
-| B3 | Sin permisos peligrosos a terceros | | | |
+| A1 | Orígenes desconocidos desactivados | Sí | Sí | — |
+| A2 | Sin root ni kernel modificado | Sí | Sí | — |
+| A3 | Sistema y navegador al día | Sí | Sí | — |
+| A4 | Sin Wi-Fi abiertas / WEP / WPA-basic | Sí | Sí | — |
+| A5 | Bluetooth apagado en sesión corporativa | No | Sí | Bluetooth apagado desde ajustes rápidos |
+| B1 | Sin malware ni APKs sospechosas | Sí | Sí | — |
+| B2 | Sin conexiones de fondo no autorizadas | No comprobado (opcional, no se usó PCAPdroid) | — | — |
+| B3 | Sin permisos peligrosos a terceros | Sí | Sí | — |
+
+## Móvil 2
+
+Modelo: Google Pixel 10    Android: 17 (parche 2026-10-05)    Herramienta de escaneo: Malwarebytes
+
+| # | Medida | Cumple antes | Cumple después | Corrección aplicada |
+|---|--------|:---:|:---:|------------|
+| A1 | Orígenes desconocidos desactivados | Sí | Sí | — |
+| A2 | Sin root ni kernel modificado | Sí | Sí | — |
+| A3 | Sistema y navegador al día | Sí | Sí | — |
+| A4 | Sin Wi-Fi abiertas / WEP / WPA-basic | No | Sí | Se olvidaron 6 redes guardadas sin cifrado (Andared_IoT, Carrefour-Conecta, QUIRONSALUD, Quironsalud_Invitados, VuelingWi-Fi y la variante abierta de paradores) |
+| A5 | Bluetooth apagado en sesión corporativa | Sí | Sí | — |
+| B1 | Sin malware ni APKs sospechosas | Sí | Sí | — |
+| B2 | Sin conexiones de fondo no autorizadas | No comprobado (opcional, no se usó PCAPdroid) | — | — |
+| B3 | Sin permisos peligrosos a terceros | Sí | Sí | — |
