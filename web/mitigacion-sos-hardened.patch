@@ -1,0 +1,509 @@
+From 5e83272daced57312c01264018fb1394c23a7caf Mon Sep 17 00:00:00 2001
+From: migridgal <92881435+Ridawo@users.noreply.github.com>
+Date: Fri, 6 Nov 2026 12:59:26 +0100
+Subject: [PATCH] fix: close broken access control, hardcoded secrets and NoSQL
+ injection across the API
+
+- centralize JWT auth into a shared verifyToken middleware (src/back/api/security.js)
+- apply it to every write endpoint in v1/v2, not just one (was 1/6 protected, now 6/6)
+- move JWT secret and admin credentials from source code into env vars
+- reject non-string filter values to block NoSQL operator injection (?field[$ne]=...)
+---
+ .env.example               | 11 +++++++
+ src/back/api/api-JFM-v2.js | 15 +++++----
+ src/back/api/api-JFM.js    | 15 +++++----
+ src/back/api/api-MRG-v2.js | 39 ++++------------------
+ src/back/api/api-MRG.js    | 13 ++++----
+ src/back/api/api-TGG-v2.js | 11 ++++---
+ src/back/api/api-TGG.js    | 11 ++++---
+ src/back/api/security.js   | 66 ++++++++++++++++++++++++++++++++++++++
+ src/back/index.js          |  3 --
+ 9 files changed, 118 insertions(+), 66 deletions(-)
+ create mode 100644 src/back/api/security.js
+
+diff --git a/.env.example b/.env.example
+index 7e09a2d..dd344f4 100644
+--- a/.env.example
++++ b/.env.example
+@@ -4,6 +4,17 @@ Variables OAuth2 / API por integrante
+ Copiar a .env y rellenar con valores reales.
+ NO subir .env al repo.
+ =====================================================
++----------------------------
++Auth (JWT + login) — añadido en la mitigación de PAI-3
++----------------------------
++# Genera un valor aleatorio, no escribas nada a mano aquí:
++#   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
++JWT_SECRET=
++ADMIN_USER=
++# Genera una contraseña aleatoria, no uses algo adivinable:
++#   node -e "console.log(require('crypto').randomBytes(16).toString('base64url'))"
++ADMIN_PASSWORD=
++
+ ----------------------------
+ JFM - Mastodon + Copernicus ESA + FedEx Sandbox (OAuth2 client_credentials)
+ ----------------------------
+diff --git a/src/back/api/api-JFM-v2.js b/src/back/api/api-JFM-v2.js
+index 46aaa1a..e2843c8 100644
+--- a/src/back/api/api-JFM-v2.js
++++ b/src/back/api/api-JFM-v2.js
+@@ -1,4 +1,5 @@
+ import { dbRoadFatalities as db } from "./db.js";
++import { verifyToken, stringFilter } from "./security.js";
+ 
+ export const BASE_URL_API_JFM_V2 = "/api/v2/road-fatalities";
+ 
+@@ -268,13 +269,13 @@ export function loadBackendJFMv2(app) {
+         if (req.query.limit) limit = parseInt(req.query.limit);
+ 
+         // Búsquedas directas
+-        if (req.query.nation) query.nation = req.query.nation.toLowerCase();
++        if (stringFilter(req.query.nation)) query.nation = req.query.nation.toLowerCase();
+         if (req.query.population_death_rate) query.population_death_rate = parseFloat(req.query.population_death_rate);
+         if (req.query.vehicle_death_rate) query.vehicle_death_rate = req.query.vehicle_death_rate === "null" ? null : parseFloat(req.query.vehicle_death_rate);
+         if (req.query.distance_death_rate) query.distance_death_rate = req.query.distance_death_rate === "null" ? null : parseFloat(req.query.distance_death_rate);
+         if (req.query.total_death) query.total_death = parseInt(req.query.total_death);
+-        if (req.query.income_level) query.income_level = req.query.income_level.toLowerCase();
+-        if (req.query.traffic_side) query.traffic_side = req.query.traffic_side.toLowerCase();
++        if (stringFilter(req.query.income_level)) query.income_level = req.query.income_level.toLowerCase();
++        if (stringFilter(req.query.traffic_side)) query.traffic_side = req.query.traffic_side.toLowerCase();
+ 
+         // Búsqueda por año (exacto) o por rango (from / to)
+         if (req.query.from || req.query.to) {
+@@ -333,7 +334,7 @@ export function loadBackendJFMv2(app) {
+ 
+     // POST colección 
+     // Ej: POST /api/v2/road-fatalities
+-    app.post(BASE_URL_API_JFM_V2, (req, res) => {
++    app.post(BASE_URL_API_JFM_V2, verifyToken, (req, res) => {
+         const newData = req.body;
+ 
+         // Comprobar estrictamente el formato esperado
+@@ -375,7 +376,7 @@ export function loadBackendJFMv2(app) {
+ 
+     /// PUT recurso concreto (Actualiza los datos)
+     // Ej: PUT /api/v2/road-fatalities/spain/2013
+-    app.put(BASE_URL_API_JFM_V2 + "/:nation/:year", (req, res) => {
++    app.put(BASE_URL_API_JFM_V2 + "/:nation/:year", verifyToken, (req, res) => {
+         const nationParam = req.params.nation.toLowerCase();
+         const yearParam = parseInt(req.params.year);
+         const body = req.body;
+@@ -402,7 +403,7 @@ export function loadBackendJFMv2(app) {
+ 
+     // DELETE a todo
+     //Ej: DELETE  /api/v2/road-fatalities
+-    app.delete(BASE_URL_API_JFM_V2, (req, res) => {
++    app.delete(BASE_URL_API_JFM_V2, verifyToken, (req, res) => {
+         db.remove({}, { multi: true }, (err, numRemoved) => {
+             if (err) return res.status(500).json({ error: "Error interno del servidor" });
+             res.status(200).json({ message: "OK: Todos los recursos eliminados." });
+@@ -412,7 +413,7 @@ export function loadBackendJFMv2(app) {
+ 
+     // DELETE a recurso concreto    
+     //Ej: DELETE  /api/v2/road-fatalities/spain/2013  (borra solo un país en un año específico)
+-    app.delete(BASE_URL_API_JFM_V2 + "/:nation/:year", (req, res) => {
++    app.delete(BASE_URL_API_JFM_V2 + "/:nation/:year", verifyToken, (req, res) => {
+         const nationParam = req.params.nation.toLowerCase();
+         const yearParam = parseInt(req.params.year);
+ 
+diff --git a/src/back/api/api-JFM.js b/src/back/api/api-JFM.js
+index de84eac..7ff9b21 100644
+--- a/src/back/api/api-JFM.js
++++ b/src/back/api/api-JFM.js
+@@ -1,4 +1,5 @@
+ import Datastore from "nedb";
++import { verifyToken, stringFilter } from "./security.js";
+ 
+ export const BASE_URL_API_JFM = "/api/v1/road-fatalities";
+ 
+@@ -78,13 +79,13 @@ export function loadBackendJFM(app) {
+         if (req.query.limit) limit = parseInt(req.query.limit);
+ 
+         // Búsquedas directas
+-        if (req.query.nation) query.nation = req.query.nation.toLowerCase();
++        if (stringFilter(req.query.nation)) query.nation = req.query.nation.toLowerCase();
+         if (req.query.population_death_rate) query.population_death_rate = parseFloat(req.query.population_death_rate);
+         if (req.query.vehicle_death_rate) query.vehicle_death_rate = req.query.vehicle_death_rate === "null" ? null : parseFloat(req.query.vehicle_death_rate);
+         if (req.query.distance_death_rate) query.distance_death_rate = req.query.distance_death_rate === "null" ? null : parseFloat(req.query.distance_death_rate);
+         if (req.query.total_death) query.total_death = parseInt(req.query.total_death);
+-        if (req.query.income_level) query.income_level = req.query.income_level.toLowerCase();
+-        if (req.query.traffic_side) query.traffic_side = req.query.traffic_side.toLowerCase();
++        if (stringFilter(req.query.income_level)) query.income_level = req.query.income_level.toLowerCase();
++        if (stringFilter(req.query.traffic_side)) query.traffic_side = req.query.traffic_side.toLowerCase();
+ 
+         // Búsqueda por año (exacto) o por rango (from / to)
+         if (req.query.from || req.query.to) {
+@@ -147,7 +148,7 @@ export function loadBackendJFM(app) {
+ 
+     // POST colección 
+     // Ej: POST /api/v1/road-fatalities
+-    app.post(BASE_URL_API_JFM, (req, res) => {
++    app.post(BASE_URL_API_JFM, verifyToken, (req, res) => {
+         const newData = req.body;
+ 
+         // Comprobar estrictamente el formato esperado
+@@ -189,7 +190,7 @@ export function loadBackendJFM(app) {
+ 
+     // PUT recurso concreto (Actualiza los datos)
+     // Ej: PUT /api/v1/road-fatalities/spain/2013
+-    app.put(BASE_URL_API_JFM + "/:nation/:year", (req, res) => {
++    app.put(BASE_URL_API_JFM + "/:nation/:year", verifyToken, (req, res) => {
+         const nationParam = req.params.nation.toLowerCase();
+         const yearParam = parseInt(req.params.year);
+         const body = req.body;
+@@ -216,7 +217,7 @@ export function loadBackendJFM(app) {
+ 
+     // DELETE a todo
+     //Ej: DELETE  /api/v1/road-fatalities
+-    app.delete(BASE_URL_API_JFM, (req, res) => {
++    app.delete(BASE_URL_API_JFM, verifyToken, (req, res) => {
+         db.remove({}, { multi: true }, (err, numRemoved) => {
+             if (err) return res.status(500).json({ error: "Error interno del servidor" });
+             res.status(200).json({ message: "OK: Todos los recursos eliminados." });
+@@ -226,7 +227,7 @@ export function loadBackendJFM(app) {
+ 
+     // DELETE a recurso concreto    
+     //Ej: DELETE  /api/v1/road-fatalities/spain/2013  (borra solo un país en un año específico)
+-    app.delete(BASE_URL_API_JFM + "/:nation/:year", (req, res) => {
++    app.delete(BASE_URL_API_JFM + "/:nation/:year", verifyToken, (req, res) => {
+         const nationParam = req.params.nation.toLowerCase();
+         const yearParam = parseInt(req.params.year);
+ 
+diff --git a/src/back/api/api-MRG-v2.js b/src/back/api/api-MRG-v2.js
+index d68b2cf..78a6a94 100644
+--- a/src/back/api/api-MRG-v2.js
++++ b/src/back/api/api-MRG-v2.js
+@@ -1,11 +1,9 @@
+ import { dbAlcohol as db } from "./db.js";
+-import jwt from "jsonwebtoken"; // 1. Importamos la librería
++import jwt from "jsonwebtoken";
++import { verifyToken, JWT_SECRET, ADMIN_USER, ADMIN_PASSWORD, stringFilter } from "./security.js";
+ 
+ export const BASE_URL_API_MRG_V2 = "/api/v2/alcohol-consumptions-per-capita";
+ 
+-// 2. Definimos tu clave secreta
+-const SECRET_KEY = "contraseñaMiguel";
+-
+ const INITIAL_DATA = [
+     // Spain
+     { nation: "Spain", date_year: 2019, alcohol_litre: 11.2, recorded_consumption: 10.7, unrecorded_consumption: 0.5 },
+@@ -224,31 +222,6 @@ export function loadBackendMRGv2(app) {
+     });
+ 
+ 
+-    // --- MIDDLEWARE DE VERIFICACIÓN ---
+-    // Este es el "portero" que revisa el token antes de entrar a las rutas protegidas
+-    function verifyToken(req, res, next) {
+-        const authHeader = req.headers['authorization'];
+-
+-        if (!authHeader) {
+-            return res.status(403).json({ error: "No se ha proporcionado un token de autenticación." });
+-        }
+-
+-        // El formato esperado es "Bearer <TOKEN>"
+-        const token = authHeader.split(" ")[1];
+-
+-        if (!token) {
+-            return res.status(403).json({ error: "Formato de token incorrecto." });
+-        }
+-
+-        jwt.verify(token, SECRET_KEY, (err, decoded) => {
+-            if (err) {
+-                return res.status(401).json({ error: "Token inválido o caducado." });
+-            }
+-            req.user = decoded;
+-            next(); // Si todo está bien, pasamos a la función de la API
+-        });
+-    }
+-
+     function isValidAlcoholStats(body) {
+         const expectedKeys = ["nation", "date_year", "alcohol_litre", "recorded_consumption", "unrecorded_consumption"];
+         const bodyKeys = Object.keys(body);
+@@ -260,12 +233,12 @@ export function loadBackendMRGv2(app) {
+     }
+ 
+     // --- RUTA DE LOGIN ---
+-    // Ruta para obtener el token. Usuario: admin / Pass: admin
++    // Usuario/contraseña y secreto de firma vienen del .env, no del código fuente.
+     app.post(BASE_URL_API_MRG_V2 + "/login", (req, res) => {
+         const { username, password } = req.body;
+ 
+-        if (username === "admin" && password === "admin") {
+-            const token = jwt.sign({ user: username }, SECRET_KEY, { expiresIn: "1h" });
++        if (username === ADMIN_USER && password === ADMIN_PASSWORD) {
++            const token = jwt.sign({ user: username }, JWT_SECRET, { expiresIn: "1h" });
+             return res.status(200).json({ token: token });
+         } else {
+             return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
+@@ -300,7 +273,7 @@ export function loadBackendMRGv2(app) {
+         let offset = 0;
+         let limit = 0;
+ 
+-        if (req.query.nation) query.nation = req.query.nation;
++        if (stringFilter(req.query.nation)) query.nation = stringFilter(req.query.nation);
+         if (req.query.date_year) query.date_year = parseInt(req.query.date_year);
+         if (req.query.alcohol_litre) query.alcohol_litre = parseFloat(req.query.alcohol_litre);
+         if (req.query.recorded_consumption) query.recorded_consumption = parseFloat(req.query.recorded_consumption);
+diff --git a/src/back/api/api-MRG.js b/src/back/api/api-MRG.js
+index 0afe8f8..3c3dd8e 100644
+--- a/src/back/api/api-MRG.js
++++ b/src/back/api/api-MRG.js
+@@ -1,4 +1,5 @@
+ import Datastore from "nedb";
++import { verifyToken, stringFilter } from "./security.js";
+ 
+ export const BASE_URL_API_MRG = "/api/v1/alcohol-consumptions-per-capita";
+ 
+@@ -30,7 +31,7 @@ export function loadBackendMRG(app) {
+         let limit = 0;
+ 
+         // Búsquedas adaptadas a tus campos
+-        if (req.query.nation) query.nation = req.query.nation;
++        if (stringFilter(req.query.nation)) query.nation = stringFilter(req.query.nation);
+         if (req.query.date_year) query.date_year = parseInt(req.query.date_year);
+         if (req.query.alcohol_litre) query.alcohol_litre = parseFloat(req.query.alcohol_litre);
+         if (req.query.recorded_consumption) query.recorded_consumption = parseFloat(req.query.recorded_consumption);
+@@ -321,7 +322,7 @@ export function loadBackendMRG(app) {
+         let offset = 0;
+         let limit = 0;
+ 
+-        if (req.query.nation) query.nation = req.query.nation;
++        if (stringFilter(req.query.nation)) query.nation = stringFilter(req.query.nation);
+         if (req.query.date_year) query.date_year = parseInt(req.query.date_year);
+         if (req.query.alcohol_litre) query.alcohol_litre = parseFloat(req.query.alcohol_litre);
+         if (req.query.recorded_consumption) query.recorded_consumption = parseFloat(req.query.recorded_consumption);
+@@ -348,7 +349,7 @@ export function loadBackendMRG(app) {
+     });
+ 
+     // POST /api/v1/alcohol-consumptions-per-capita
+-    app.post(BASE_URL_API_MRG, (req, res) => {
++    app.post(BASE_URL_API_MRG, verifyToken, (req, res) => {
+         const newData = req.body;
+ 
+         if (!isValidAlcoholStats(newData)) {
+@@ -375,7 +376,7 @@ export function loadBackendMRG(app) {
+     });
+ 
+     // DELETE /api/v1/alcohol-consumptions-per-capita
+-    app.delete(BASE_URL_API_MRG, (req, res) => {
++    app.delete(BASE_URL_API_MRG, verifyToken, (req, res) => {
+         db.remove({}, { multi: true }, (err, numRemoved) => {
+             if (err) return res.status(500).json({ error: "Error interno del servidor" });
+             res.status(200).json({ message: "OK: Todos los recursos han sido eliminados." });
+@@ -388,7 +389,7 @@ export function loadBackendMRG(app) {
+     });
+ 
+     // PUT /api/v1/alcohol-consumptions-per-capita/:nation/:year
+-    app.put(BASE_URL_API_MRG + "/:nation/:date_year", (req, res) => {
++    app.put(BASE_URL_API_MRG + "/:nation/:date_year", verifyToken, (req, res) => {
+         const nationParam = req.params.nation;
+         const yearParam = parseInt(req.params.date_year);
+         const body = req.body;
+@@ -413,7 +414,7 @@ export function loadBackendMRG(app) {
+     });
+ 
+     // DELETE /api/v1/alcohol-consumptions-per-capita/:nation/:year
+-    app.delete(BASE_URL_API_MRG + "/:nation/:date_year", (req, res) => {
++    app.delete(BASE_URL_API_MRG + "/:nation/:date_year", verifyToken, (req, res) => {
+         const nationParam = req.params.nation;
+         const yearParam = parseInt(req.params.date_year);
+ 
+diff --git a/src/back/api/api-TGG-v2.js b/src/back/api/api-TGG-v2.js
+index b27128a..7ec5a23 100644
+--- a/src/back/api/api-TGG-v2.js
++++ b/src/back/api/api-TGG-v2.js
+@@ -1,4 +1,5 @@
+ import { dbLiteracy as db } from "./db.js";
++import { verifyToken, stringFilter } from "./security.js";
+ 
+ export const BASE_URL_API_TGG_V2 = "/api/v2/literacy-rates";
+ 
+@@ -153,7 +154,7 @@ export function loadBackendTGGv2(app) {
+         let offset = 0;
+         let limit = 0;
+ 
+-        if (req.query.country) query.country = req.query.country;
++        if (stringFilter(req.query.country)) query.country = req.query.country;
+         if (req.query.year) query.year = parseInt(req.query.year);
+         if (req.query.total) query.total = parseFloat(req.query.total);
+         if (req.query.male) query.male = parseFloat(req.query.male);
+@@ -206,7 +207,7 @@ export function loadBackendTGGv2(app) {
+     });
+ 
+     // POST /api/v2/literacy-rates
+-    app.post(BASE_URL_API_TGG_V2, (req, res) => {
++    app.post(BASE_URL_API_TGG_V2, verifyToken, (req, res) => {
+         const newData = req.body;
+ 
+         if (!isValidLiteracyStats(newData)) {
+@@ -233,7 +234,7 @@ export function loadBackendTGGv2(app) {
+     });
+ 
+     // DELETE /api/v2/literacy-rates
+-    app.delete(BASE_URL_API_TGG_V2, (req, res) => {
++    app.delete(BASE_URL_API_TGG_V2, verifyToken, (req, res) => {
+         db.remove({}, { multi: true }, (err, numRemoved) => {
+             if (err) return res.status(500).json({ error: "Error interno del servidor" });
+             res.status(200).json({ message: "OK: Todos los recursos han sido eliminados." });
+@@ -246,7 +247,7 @@ export function loadBackendTGGv2(app) {
+     });
+ 
+     // PUT /api/v2/literacy-rates/:country/:year
+-    app.put(BASE_URL_API_TGG_V2 + "/:country/:year", (req, res) => {
++    app.put(BASE_URL_API_TGG_V2 + "/:country/:year", verifyToken, (req, res) => {
+         const countryParam = req.params.country;
+         const yearParam = parseInt(req.params.year);
+         const body = req.body;
+@@ -271,7 +272,7 @@ export function loadBackendTGGv2(app) {
+     });
+ 
+     // DELETE /api/v2/literacy-rates/:country/:year
+-    app.delete(BASE_URL_API_TGG_V2 + "/:country/:year", (req, res) => {
++    app.delete(BASE_URL_API_TGG_V2 + "/:country/:year", verifyToken, (req, res) => {
+         const countryParam = req.params.country;
+         const yearParam = parseInt(req.params.year);
+ 
+diff --git a/src/back/api/api-TGG.js b/src/back/api/api-TGG.js
+index 00fb518..f22a066 100644
+--- a/src/back/api/api-TGG.js
++++ b/src/back/api/api-TGG.js
+@@ -1,4 +1,5 @@
+ import Datastore from "nedb";
++import { verifyToken, stringFilter } from "./security.js";
+ 
+ export const BASE_URL_API_TGG = "/api/v1/literacy-rates";
+ 
+@@ -153,7 +154,7 @@ export function loadBackendTGG(app) {
+         let offset = 0;
+         let limit = 0;
+ 
+-        if (req.query.country) query.country = req.query.country;
++        if (stringFilter(req.query.country)) query.country = req.query.country;
+         if (req.query.year) query.year = parseInt(req.query.year);
+         if (req.query.total) query.total = parseFloat(req.query.total);
+         if (req.query.male) query.male = parseFloat(req.query.male);
+@@ -206,7 +207,7 @@ export function loadBackendTGG(app) {
+     });
+ 
+     // POST /api/v1/literacy-rates
+-    app.post(BASE_URL_API_TGG, (req, res) => {
++    app.post(BASE_URL_API_TGG, verifyToken, (req, res) => {
+         const newData = req.body;
+ 
+         if (!isValidLiteracyStats(newData)) {
+@@ -233,7 +234,7 @@ export function loadBackendTGG(app) {
+     });
+ 
+     // DELETE /api/v1/literacy-rates
+-    app.delete(BASE_URL_API_TGG, (req, res) => {
++    app.delete(BASE_URL_API_TGG, verifyToken, (req, res) => {
+         db.remove({}, { multi: true }, (err, numRemoved) => {
+             if (err) return res.status(500).json({ error: "Error interno del servidor" });
+             res.status(200).json({ message: "OK: Todos los recursos han sido eliminados." });
+@@ -246,7 +247,7 @@ export function loadBackendTGG(app) {
+     });
+ 
+     // PUT /api/v1/literacy-rates/:country/:year
+-    app.put(BASE_URL_API_TGG + "/:country/:year", (req, res) => {
++    app.put(BASE_URL_API_TGG + "/:country/:year", verifyToken, (req, res) => {
+         const countryParam = req.params.country;
+         const yearParam = parseInt(req.params.year);
+         const body = req.body;
+@@ -271,7 +272,7 @@ export function loadBackendTGG(app) {
+     });
+ 
+     // DELETE /api/v1/literacy-rates/:country/:year
+-    app.delete(BASE_URL_API_TGG + "/:country/:year", (req, res) => {
++    app.delete(BASE_URL_API_TGG + "/:country/:year", verifyToken, (req, res) => {
+         const countryParam = req.params.country;
+         const yearParam = parseInt(req.params.year);
+ 
+diff --git a/src/back/api/security.js b/src/back/api/security.js
+new file mode 100644
+index 0000000..4adf50c
+--- /dev/null
++++ b/src/back/api/security.js
+@@ -0,0 +1,66 @@
++// =====================================================================
++// security.js — Middleware y utilidades de seguridad compartidas
++// =====================================================================
++// Centraliza lo que antes estaba duplicado (o ausente) en cada módulo de
++// la API: el secreto JWT, el middleware que comprueba el token, y un
++// saneador para los parámetros de filtro que llegan por query string.
++//
++// Antes de esta corrección:
++//   - El secreto JWT estaba escrito en el código fuente (público en GitHub).
++//   - Solo un endpoint (alcohol v2) comprobaba el token; el resto de
++//     endpoints de escritura (v1 completo, literacy-rates y road-fatalities
++//     en ambas versiones) no pedían ninguna autenticación.
++//   - El login aceptaba credenciales fijas (admin/admin).
++//   - Los filtros de los GET pasaban el valor de la query string
++//     directamente a NeDB, permitiendo inyectar operadores (?campo[$ne]=...).
++// =====================================================================
++
++import jwt from "jsonwebtoken";
++
++export const JWT_SECRET = process.env.JWT_SECRET;
++if (!JWT_SECRET) {
++    throw new Error(
++        "Falta JWT_SECRET en el .env. Genera uno con:\n" +
++        "  node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\"\n" +
++        "y añádelo a .env (ver .env.example)."
++    );
++}
++
++export const ADMIN_USER = process.env.ADMIN_USER;
++export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
++if (!ADMIN_USER || !ADMIN_PASSWORD) {
++    throw new Error("Faltan ADMIN_USER / ADMIN_PASSWORD en el .env (ver .env.example).");
++}
++
++// --- Middleware de verificación de token ---
++// Se aplica a todos los endpoints de escritura (POST/PUT/DELETE) de la API,
++// en v1 y v2. Antes solo protegía un endpoint; ahora es uniforme en toda la API.
++export function verifyToken(req, res, next) {
++    const authHeader = req.headers["authorization"];
++
++    if (!authHeader) {
++        return res.status(403).json({ error: "No se ha proporcionado un token de autenticación." });
++    }
++
++    const token = authHeader.split(" ")[1];
++    if (!token) {
++        return res.status(403).json({ error: "Formato de token incorrecto." });
++    }
++
++    jwt.verify(token, JWT_SECRET, (err, decoded) => {
++        if (err) {
++            return res.status(401).json({ error: "Token inválido o caducado." });
++        }
++        req.user = decoded;
++        next();
++    });
++}
++
++// --- Saneador de parámetros de filtro ---
++// Los filtros de los GET solo deben aceptar strings planos. Si Express
++// (vía la librería `qs`) parsea el parámetro como un objeto (p. ej. por
++// `?campo[$ne]=null`), esta función lo descarta en vez de dejarlo pasar
++// a la consulta de NeDB como un operador.
++export function stringFilter(value) {
++    return typeof value === "string" ? value : undefined;
++}
+diff --git a/src/back/index.js b/src/back/index.js
+index f5457e3..14f94ec 100644
+--- a/src/back/index.js
++++ b/src/back/index.js
+@@ -37,9 +37,6 @@ const port = process.env.PORT || 8080;
+ app.use(cors());
+ app.use(express.json());
+ 
+-// Puntos extra Miguel 
+-const SECRET_KEY = "contraseñaMiguel";
+-
+ // =====================================
+ // CARGAR APIs
+ // =====================================
+-- 
+2.53.0
+

@@ -46,7 +46,7 @@ Nota del 6-nov, tras la mitigación: rotar el secreto en el código actual no ba
 
 Con esto ya están las 3 vulnerabilidades obligatorias del apartado (b). Añado una cuarta como extra:
 
-**Vulnerabilidad #4 (NoSQL injection, A03:2021).** Completa. Capturas: `#4-filtro-normal.png` (`?nation=Spain`, 3 resultados, 342 bytes) y `#4-filtro-inyectado.png` (`?nation[$ne]=null`, 150 resultados, 17.148 bytes — el mismo tamaño que la colección sin filtrar, prueba de que el filtro se saltó por completo). El filtro se salta inyectando el operador `$ne` de NeDB por la query string, porque Express/`qs` admite sintaxis de objeto anidado en la URL y el valor llega sin sanear a `db.find()`. Es probable que el mismo patrón funcione en otros campos o endpoints (`date_year`, `country`... en JFM/TGG), no lo he probado todavía.
+**Vulnerabilidad #4 (NoSQL injection, A03:2021).** Completa. Capturas: `#4-filtro-normal.png` (`?nation=Spain`, 3 resultados, 342 bytes) y `#4-filtro-inyectado.png` (`?nation[$ne]=null`, 150 resultados, 17.148 bytes — el mismo tamaño que la colección sin filtrar, prueba de que el filtro se saltó por completo). El filtro se salta inyectando el operador `$ne` de NeDB por la query string, porque Express/`qs` admite sintaxis de objeto anidado en la URL y el valor llega sin sanear a `db.find()`. Es probable que el mismo patrón funcione en otros campos o endpoints (`date_year`, `country`... en JFM/TGG); no lo probé uno a uno, pero la corrección del 6-nov (`stringFilter`) se aplicó a todos los filtros de texto de los 6 ficheros de la API.
 
 Aviso sobre el impacto real, para no exagerarlo en el informe: en este endpoint concreto (`GET`, público, sin autenticación) no hay ningún dato al que no se pudiera acceder ya pidiendo la colección sin filtro. El hallazgo no es "robo de datos", es que el código no valida el tipo de los parámetros de entrada, lo que permite inyectar operadores de NeDB. El riesgo real es que el mismo patrón de código está repetido en más sitios del proyecto, y si algún día se usara para filtrar algo sensible (por ejemplo, datos restringidos a un usuario), el mismo truco serviría para saltárselo.
 
@@ -84,4 +84,4 @@ Funcionalidad legítima verificada intacta: login con las credenciales nuevas de
 
 Creé y renombré el fork a `Ridawo/SOS-hardened`, lo cloné en local y abrí la rama de trabajo. Instalé el proyecto, lo compilé con `npm run build` y lo arranqué en local, puerto 8080. Instalé ZAP, abrí sesión persistida con timestamp y dejé el proxy en 8082. Navegué con Firefox a través del proxy: home, `/login` (dos intentos fallidos y uno correcto con `admin`/`admin`), sección Alcohol.
 
-Pendiente: revisar el History de ZAP, capturar la petición de login como evidencia de la #3, probar la #1 y la #4 desde ZAP, generar el informe HTML.
+Pendiente al cierre del 5-nov (hecho el 6-nov): revisar el History de ZAP, capturar la petición de login como evidencia de la #3, probar la #1 y la #4 desde ZAP, generar el informe HTML.

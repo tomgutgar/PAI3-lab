@@ -83,20 +83,20 @@ Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **
 
 ### 3.2 Plan de pruebas y resultados
 
-**Procedimiento** en cada móvil: activar Opciones de desarrollador y Depuración USB, volcado `antes` con el script, escaneo con Malwarebytes, corrección de lo que falle, volcado `despues`, y desactivar la Depuración USB al terminar.
+**Procedimiento** en cada móvil: activar Opciones de desarrollador y Depuración USB, volcado `antes` con el script, escaneo con Malwarebytes, corrección de lo que falle, volcado `despues`, y desactivar la Depuración USB al terminar. El escaneo de Malwarebytes se hizo una vez por móvil, antes de corregir, porque las correcciones (Bluetooth, redes Wi-Fi y Chrome) no instalan ni quitan aplicaciones y no cambian el resultado de B1.
 
 **Resultados** (detalle completo en `movil/checklist.md`):
 
 | Punto | Pixel 9 Pro | Pixel 10 |
 |---|:---:|:---:|
-| A1 — Orígenes desconocidos desactivados | Cumple | Cumple |
-| A2 — Sin root | Cumple | Cumple |
-| A3 — Sistema y navegador al día | Cumple | **No cumplía** (Chrome) |
-| A4 — Sin Wi-Fi inseguras | Cumple | **No cumplía** |
-| A5 — Bluetooth apagado | **No cumplía** | Cumple |
-| B1 — Sin malware | Cumple | Cumple |
-| B2 — Sin conexiones de fondo no autorizadas | No comprobado (opcional) | No comprobado (opcional) |
-| B3 — Sin permisos peligrosos | Cumple | Cumple |
+| A1. Orígenes desconocidos desactivados | Cumple | Cumple |
+| A2. Sin root | Cumple | Cumple |
+| A3. Sistema y navegador al día | Cumple | **No cumplía** (Chrome) |
+| A4. Sin Wi-Fi inseguras | Cumple | **No cumplía** |
+| A5. Bluetooth apagado | **No cumplía** | Cumple |
+| B1. Sin malware | Cumple | Cumple |
+| B2. Sin conexiones de fondo no autorizadas | No comprobado (opcional) | No comprobado (opcional) |
+| B3. Sin permisos peligrosos | Cumple | Cumple |
 
 El punto A1 se comprobó a mano en cada móvil (Ajustes → Instalar aplicaciones desconocidas: ninguna app con el permiso concedido) y el A3 en Ajustes → Actualizaciones de software y en la ficha de Chrome en Play Store, porque el script solo da el nivel de parche.
 
@@ -126,7 +126,7 @@ Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autent
 
 ### 4.2 Plan de pruebas y resultados
 
-**Trazabilidad del tráfico.** Con el navegador configurado para pasar por el proxy de ZAP (puerto 8082) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, y queda demostrado así que todo el tráfico HTTP pasa por el proxy sin alterarse.
+**Trazabilidad del tráfico.** Con ZAP escuchando en `localhost:8082` y Firefox configurado a mano para usar ese proxy también en HTTPS (capturas `#5-zap-proxy-8082.png` y `#5-firefox-proxy-manual.png`) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, y queda demostrado así que todo el tráfico HTTP pasa por el proxy sin alterarse.
 
 Para demostrar también la trazabilidad en HTTPS, se importó el certificado raíz de ZAP en Firefox (Autoridades → Importar → "Confiar en esta CA para identificar sitios web") y se navegó con el proxy activo a `https://example.com`, un dominio externo ajeno a esta práctica usado únicamente para comprobar la intercepción. El certificado de esa página, visto desde el propio navegador, tiene como emisor "Zed Attack Proxy Root CA" en vez del emisor real del sitio, lo que confirma que ZAP genera un certificado propio por cada dominio y que el tráfico cifrado pasa igual por el proxy; la petición `https://example.com/` con `200 OK` queda también registrada en la pestaña History. Capturas: `#5-cert-zap-importado.png` (CA de ZAP en Autoridades), `#5-cert-zap-emisor-https.png` (certificado con emisor ZAP) y `#5-zap-history-https.png` (petición HTTPS en History).
 
@@ -134,7 +134,7 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 
 **Metodología seguida**, en caja negra: reconocimiento con el Spider de ZAP para mapear las rutas de la aplicación (incluida la API, versionada en `v1` y `v2`, con tres recursos cada una); prueba de autenticación en cada endpoint de escritura, sin ninguna cabecera; localización del endpoint real de login observando el tráfico generado al enviar el formulario; y, una vez obtenido un token, análisis de su cabecera y crackeo del secreto de firma con una wordlist construida a partir de los nombres del equipo visibles en la propia web.
 
-**Vulnerabilidad 1 — Control de acceso roto (A01:2021).** Se probó `DELETE` sin autenticación contra los 6 endpoints de recurso de la API (3 recursos × 2 versiones):
+**Vulnerabilidad 1. Control de acceso roto (A01:2021).** Se probó `DELETE` sin autenticación contra los 6 endpoints de recurso de la API (3 recursos × 2 versiones):
 
 | Recurso | v1 | v2 |
 |---|---|---|
@@ -146,15 +146,15 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 
 ![DELETE sin autenticación aceptado](../evidencias/web/capturas/%231-acceso-sin-auth.png)
 
-**Vulnerabilidad 2 — Secreto de firma JWT débil y recuperable (A02:2021).** El único endpoint protegido (alcohol v2) usa un token JWT firmado con HS256. Tras obtener un token válido, se guardó y se atacó offline con `hashcat`: el diccionario genérico (`rockyou.txt`) no lo recupera, pero una wordlist de 360 combinaciones (palabras típicas de contraseña + nombres del equipo, sacados de la propia página de inicio) lo crackea en menos de un segundo. Con el secreto en mano se puede firmar un token válido para cualquier usuario sin pasar por el login. Aparte, el secreto sigue recuperable en el historial de git aunque se rote en el código actual (repo público); rotarlo en el HEAD no deshace la exposición pasada, por eso se trata como comprometido para siempre y no se intenta "arreglar" reescribiendo el historial.
+**Vulnerabilidad 2. Secreto de firma JWT débil y recuperable (A02:2021).** El único endpoint protegido (alcohol v2) usa un token JWT firmado con HS256. Tras obtener un token válido, se guardó y se atacó offline con `hashcat`: el diccionario genérico (`rockyou.txt`) no lo recupera, pero una wordlist de 360 combinaciones (palabras típicas de contraseña + nombres del equipo, sacados de la propia página de inicio) lo crackea en menos de un segundo. Con el secreto en mano se puede firmar un token válido para cualquier usuario sin pasar por el login. Aparte, el secreto sigue recuperable en el historial de git aunque se rote en el código actual (repo público); rotarlo en el HEAD no deshace la exposición pasada, por eso se trata como comprometido para siempre y no se intenta "arreglar" reescribiendo el historial.
 
 ![Secreto JWT crackeado con hashcat](../evidencias/web/capturas/%232-hashcat-wordlist-crackeado.png)
 
-**Vulnerabilidad 3 — Credenciales por defecto (A07:2021).** El login de ese mismo endpoint acepta `admin`/`admin`.
+**Vulnerabilidad 3. Credenciales por defecto (A07:2021).** El login de ese mismo endpoint acepta `admin`/`admin`.
 
 ![Login con credenciales admin/admin](../evidencias/web/capturas/%233-login-response.png)
 
-**Vulnerabilidad 4 — Inyección NoSQL (A03:2021), adicional.** Los filtros de los `GET` de la API pasan los parámetros de la query string directamente a la base de datos sin comprobar su tipo. Fuzzing con ZAP sobre el parámetro `nation` con 5 operadores de NeDB (`$ne`, `$gt`, `$regex`, `$exists`, `$where`) muestra que los 5 se saltan el filtro por igual: la petición de control devuelve 342 bytes (3 resultados), y las 5 inyectadas devuelven 17.148 bytes, el tamaño exacto de la colección completa. El impacto en este endpoint concreto es bajo, porque es público y sin filtro ya devuelve todo; el riesgo real es que el mismo patrón de código, sin saneamiento de tipos, se repite en otros puntos de la aplicación, y que el operador `$where` podría usarse para ejecutar código si se le pasara una función en vez del valor simple usado en la prueba.
+**Vulnerabilidad 4. Inyección NoSQL (A03:2021), adicional.** Los filtros de los `GET` de la API pasan los parámetros de la query string directamente a la base de datos sin comprobar su tipo. Fuzzing con ZAP sobre el parámetro `nation` con 5 operadores de NeDB (`$ne`, `$gt`, `$regex`, `$exists`, `$where`; lista en `web/payloads/nosql.txt` y captura `#4-fuzzer-payloads-nosql.png`) muestra que los 5 se saltan el filtro por igual: la petición de control devuelve 342 bytes (3 resultados), y las 5 inyectadas devuelven 17.148 bytes, el tamaño exacto de la colección completa. El impacto en este endpoint concreto es bajo, porque es público y sin filtro ya devuelve todo; el riesgo real es que el mismo patrón de código, sin saneamiento de tipos, se repite en otros puntos de la aplicación, y que el operador `$where` podría usarse para ejecutar código si se le pasara una función en vez del valor simple usado en la prueba.
 
 ![Fuzzer de ZAP con los 5 operadores NoSQL inyectados](../evidencias/web/capturas/%234-fuzzer-nosql-caja-negra.png)
 
@@ -172,7 +172,7 @@ Evidencia (peticiones, respuestas, resultados de hashcat y log de `npm audit`) e
 
 ### 4.3 Plan de mitigación y demostración (antes/después)
 
-Se corrigieron las 4 vulnerabilidades en el código de `SOS-hardened`: un middleware de autenticación (`verifyToken`) centralizado y aplicado a todos los endpoints de escritura de los 6 ficheros de la API (antes solo protegía uno de seis); el secreto de firma JWT y las credenciales de login movidos a variables de entorno, generadas aleatoriamente, fuera del código fuente y del repositorio; y un saneador (`stringFilter`) que descarta cualquier valor de filtro que no sea un string plano, bloqueando la inyección de operadores NoSQL.
+Se corrigieron las 4 vulnerabilidades en el código de `SOS-hardened`: un middleware de autenticación (`verifyToken`) centralizado y aplicado a todos los endpoints de escritura de los 6 ficheros de la API (antes solo protegía uno de seis); el secreto de firma JWT y las credenciales de login movidos a variables de entorno, generadas aleatoriamente, fuera del código fuente y del repositorio; y un saneador (`stringFilter`) que descarta cualquier valor de filtro que no sea un string plano, bloqueando la inyección de operadores NoSQL. El cambio completo está en `web/mitigacion-sos-hardened.patch` (9 ficheros, 118 líneas añadidas y 66 eliminadas) y publicado en https://github.com/Ridawo/SOS-hardened.
 
 Repitiendo exactamente los mismos ataques de la sección 4.2:
 
