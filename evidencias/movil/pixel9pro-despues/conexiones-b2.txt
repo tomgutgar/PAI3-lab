@@ -1,0 +1,29 @@
+# B2 conexiones TCP y UDP establecidas (2026-11-09 17:38)
+com.android.chrome                                      -> TCP 142.251.168.139:443
+com.android.chrome                                      -> TCP 151.101.132.157:443
+com.android.chrome                                      -> TCP 172.217.114.4:443
+com.android.chrome                                      -> TCP 172.217.20.238:443
+com.android.chrome                                      -> TCP 172.217.20.238:443
+com.android.chrome                                      -> TCP 172.66.0.227:443
+com.android.chrome                                      -> TCP 199.232.32.157:443
+com.android.chrome                                      -> TCP 216.239.34.36:443
+com.android.chrome                                      -> TCP 216.58.205.227:443
+com.android.chrome                                      -> TCP 216.58.205.238:443
+com.android.chrome                                      -> TCP 216.58.206.8:443
+com.android.chrome                                      -> TCP 64.233.167.95:443
+com.android.chrome                                      -> TCP 66.102.1.100:443
+com.android.chrome                                      -> TCP 74.125.71.155:443
+com.android.chrome                                      -> UDP 172.217.20.238:443
+com.android.chrome                                      -> UDP 216.239.34.36:443
+com.android.vending                                     -> UDP 172.217.113.4:443
+com.google.android.apps.weather                         -> UDP 172.217.114.4:443
+com.google.android.cellbroadcastservice,com.google.android.networkstack,com.google.android.networkstack.tethering -> UDP 192.168.1.1:67
+com.google.android.gms,com.google.android.gsf           -> TCP 151.101.133.91:443
+com.google.android.gms,com.google.android.gsf           -> TCP 172.217.115.4:443
+com.google.android.gms,com.google.android.gsf           -> TCP 172.217.115.4:443
+com.google.android.gms,com.google.android.gsf           -> TCP 172.217.119.4:443
+com.google.android.gms,com.google.android.gsf           -> TCP 172.253.143.188:5228
+com.google.android.googlequicksearchbox                 -> TCP 142.251.157.119:443
+com.google.android.googlequicksearchbox                 -> UDP 142.251.157.119:443
+
+Total: 26 conexiones; apps distintas: 6

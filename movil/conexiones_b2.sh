@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Punto B2: lista las conexiones TCP establecidas del movil y la app que tiene cada una.
+# Punto B2: lista las conexiones TCP y UDP establecidas del movil y la app que tiene cada una.
 # Se ejecuta con el navegador corporativo (Chrome) abierto y en uso.
-# Lee /proc/net/tcp y tcp6 (el UID de cada conexion) y lo cruza con "pm list packages -U".
+# Lee /proc/net/{tcp,tcp6,udp,udp6} (el UID de cada conexion) y lo cruza con "pm list packages -U".
 # Uso: ./conexiones_b2.sh <modelo> <antes|despues>
 set -euo pipefail
 command -v adb >/dev/null || { echo "adb no instalado (ver README)."; exit 1; }
@@ -12,7 +12,7 @@ DEST="$(cd "$(dirname "$0")/.." && pwd)/evidencias/movil/${MODELO}-${ETIQUETA}"
 mkdir -p "$DEST"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
-adb shell "cat /proc/net/tcp /proc/net/tcp6" > "$TMP/tcp" 2>&1 || true
+adb shell 'for f in tcp tcp6 udp udp6; do echo "## $f"; cat /proc/net/$f; done' > "$TMP/tcp" 2>&1 || true
 adb shell "pm list packages -U" > "$TMP/uids" 2>&1 || true
 
 python3 -I - "$TMP/tcp" "$TMP/uids" <<'EOF' | tee "$DEST/conexiones-b2.txt"
@@ -39,14 +39,16 @@ def nombre(uid):
     if uid >= 10000: return f"uid {uid} (app sin paquete listado)"
     return {0: "root (sistema)", 1000: "system (sistema)", 1051: "dns (sistema)"}.get(uid, f"uid {uid} (sistema)")
 
-print(f"# B2 conexiones TCP establecidas ({datetime.datetime.now():%Y-%m-%d %H:%M})")
-filas = []
+print(f"# B2 conexiones TCP y UDP establecidas ({datetime.datetime.now():%Y-%m-%d %H:%M})")
+filas, proto = [], "tcp"
 for l in tcp:
+    if l.startswith("## "):
+        proto = l[3:6]; continue
     c = l.split()
-    if len(c) < 8 or c[0] == "sl" or c[3] != "01":   # 01 = ESTABLISHED
+    if len(c) < 8 or c[0] == "sl" or c[3] != "01":   # 01 = conexion establecida
         continue
     rip, rport = c[2].split(":")
-    filas.append((nombre(int(c[7])), f"{ip(rip)}:{int(rport, 16)}"))
+    filas.append((nombre(int(c[7])), f"{proto.upper()} {ip(rip)}:{int(rport, 16)}"))
 if not filas:
     print("Sin conexiones o /proc/net no accesible. Salida cruda:")
     print("\n".join(tcp[:5]))
