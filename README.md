@@ -4,7 +4,7 @@ Auditoría de seguridad en sistemas informáticos y análisis de vulnerabilidade
 
 | Carpeta | Contenido |
 |---|---|
-| `informe/` | Informe final (`informe_PAI3-ST5.pdf`, también en `.docx`), su fuente `informe.md` y `exportar.py`, que genera ambos |
+| `informe_PAI3-ST5.pdf` | Informe final |
 | `sistemas/` | Parte 1: scripts de Lynis (`run_lynis.sh`) y de bastionado (`hardening.sh`, `sysctl-hardening.conf`, `custom.prf`) |
 | `navegador/` | Parte 2: política de Firefox (`firefox/policies.json`) y script de despliegue (`desplegar.sh`) |
 | `movil/` | Parte 3: scripts de auditoría por ADB (`auditar_android.sh`, `conexiones_b2.sh`) y `checklist.md` con los resultados |
