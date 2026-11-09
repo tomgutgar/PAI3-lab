@@ -1,11 +1,8 @@
-# PAI-3 VULNAWEB — Informe (borrador)
-
-> Plantilla con la estructura OBLIGATORIA del enunciado. Máx. 15 páginas (referencias y anexos NO cuentan).
-> Se escribe aquí y se exporta a PDF (`informe_PAI3-ST<Num>.pdf`) para el zip.
+# PAI-3 VULNAWEB. Auditoría de seguridad en sistemas informáticos y análisis de vulnerabilidades en una universidad pública
 
 ## Portada
 
-PAI-3 VULNAWEB · Security Team Nº ___ · Integrantes: ___ · Fecha: ___
+PAI-3 VULNAWEB · Security Team 5 · Integrantes: Miguel Ridao y Tomás Gutiérrez · Fecha: 10 de noviembre de 2026
 
 ## Índice
 
@@ -13,10 +10,8 @@ PAI-3 VULNAWEB · Security Team Nº ___ · Integrantes: ___ · Fecha: ___
 
 ## Resumen ejecutivo
 
-_Media página. Una frase de resultado por parte._
-
 - Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu, de 64 a 71 en Debian y de 64 a 73 en Kali, los tres por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd).
-- Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido.
+- Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido; tras la corrección, los 6 rechazan las peticiones sin un token válido.
 - Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro), corregidos y verificados después.
 
 ## 1. Auditoría de sistemas informáticos
@@ -33,8 +28,8 @@ La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de 
 |-------|----------------------|--------------|---------------|
 | `firewall` | **UFW**: deniega todo lo entrante, permite lo saliente | Cierra los puertos no usados; reduce la superficie de ataque por red | FIRE-4590 |
 | `passwords` | **libpam-pwquality** (mín. 12 caracteres, con dígito y mayúscula), caducidad 90 días y `UMASK 027` en `login.defs` | Contraseñas resistentes a fuerza bruta y archivos nuevos no legibles por otros usuarios | AUTH-9262, AUTH-9286, AUTH-9328 |
-| `banner` | Aviso legal en `/etc/issue` e `/issue.net` | Advierte de acceso restringido y registro de actividad (valor legal/disuasorio) | BANN-7126, BANN-7130 |
-| `usb` | Bloqueo de los módulos `usb-storage` y `firewire` | Impide sacar datos o meter malware con memorias USB | STRG-1840, STRG-1846 |
+| `banner` | Aviso legal en `/etc/issue` y `/etc/issue.net` | Advierte de acceso restringido y registro de actividad (valor legal/disuasorio) | BANN-7126, BANN-7130 |
+| `usb` | Bloqueo de los módulos `usb-storage` y `firewire` | Impide sacar datos o meter malware con memorias USB | USB-1000, STRG-1846 |
 | `kernel` | **sysctl** (`sysctl-hardening.conf`): anti-spoofing, sin redirecciones ICMP, SYN cookies, ASLR completo, ocultar punteros y `dmesg` | Protege la pila de red (spoofing, SYN flood, MITM) y dificulta explotar el kernel | KRNL-6000 |
 | `coredumps` | `* hard core 0` en `limits.conf` | Evita volcados de memoria que podrían contener contraseñas o claves | KRNL-5820 |
 | `herramientas` | **auditd** y **acct** (auditoría y registro de comandos), **sysstat** (estadísticas), **rkhunter** (detección de rootkits), **fail2ban** (bloquea IPs tras intentos fallidos), **AIDE** (integridad de ficheros), **apt-show-versions** (control de parches) | Añade detección y trazabilidad: si hay un ataque, se detecta y queda registrado | ACCT-*, HRDN-7230, FINT-4350, DEB-0880, PKGS-7394 |
@@ -60,19 +55,40 @@ La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de 
 | Debian 13      | 64 | 65 | **71** | 214/327 → 246/342 | 49 → 42 |
 | Kali Rolling   | 64 | 65 | **73** | 182/278 → 212/288 | 42 → 35 |
 
-Los tres equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests más en la pasada final (270 → 282 en Ubuntu, 279 → 288 en Debian, 263 → 269 en Kali), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
+Los tres equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests más en la pasada final (269 → 281 en Ubuntu, 278 → 287 en Debian, 263 → 269 en Kali), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
 
-**Firewall (64 → 66 en Ubuntu, 64 → 65 en Debian).** Con UFW activo y la política "denegar todo lo entrante" (la que recomienda el CIS Benchmark), Lynis pasa a dar el firewall por configurado y el índice sube 1-2 puntos.
+**Firewall (64 → 66 en Ubuntu, 64 → 65 en Debian).** Con UFW activo y la política "denegar todo lo entrante" (la que recomienda el CIS Benchmark), el índice sube 1-2 puntos. En estas VMs no se puede saber qué test exacto sumó esos puntos, porque el log de la pasada inicial se sobrescribió; en Kali, donde se conservan los tres logs, se vio que vienen de los parámetros de kernel que aplica UFW (párrafo siguiente), y es probable que aquí pase lo mismo.
 
 **Firewall en Kali (64 → 65).** Aquí el caso es distinto. Lynis ya marca el firewall como activo en la pasada inicial (`firewall_software[]=nftables`, `firewall_active=1`), porque Docker carga sus propias reglas en nftables, así que FIRE-4590 da los mismos puntos con y sin UFW. El punto que se gana viene de otro sitio: al activarse, UFW aplica su fichero `/etc/ufw/sysctl.conf`, que desactiva las redirecciones ICMP, y eso resuelve 3 comprobaciones de KRNL-6000 (`accept_redirects` en IPv4 e IPv6). UFW se mantiene igualmente, porque las reglas de Docker solo gestionan el tráfico de los contenedores y no imponen ninguna política sobre lo que entra al equipo.
+
+**Medidas que no surtieron efecto.** Al revisar los logs del después se ven dos medidas del script que no llegaron a contar. La primera es el banner: Lynis no comprueba solo que `/etc/issue` exista, sino que contenga al menos 5 palabras clave de una lista en inglés (*authorized*, *monitor*, *prohibited*, *legal*…). El texto que pone el script está en español y da 0 coincidencias ("Found only 0 key words" en el log), así que BANN-7126 y BANN-7130 siguen como sugerencia en los tres equipos. La segunda es el `UMASK 027`: el script lo aplica con un `sed` que sustituye la línea `UMASK` de `/etc/login.defs`, pero en Debian 13 y en Kali esa línea no existe, el `sed` no cambia nada y AUTH-9328 sigue como sugerencia; solo se aplicó en Ubuntu. Las dos tienen una corrección sencilla: un banner bilingüe que incluya esas palabras en inglés, y añadir la línea `UMASK 027` cuando no exista. Los índices de la tabla corresponden al script tal como está en el repositorio, sin esta corrección.
+
+**Sugerencias de Lynis que no se aplicaron.** Después del bastionado quedan entre 35 y 42 sugerencias por equipo. Las principales y el motivo para no aplicarlas:
+
+| Sugerencia | Motivo |
+|---|---|
+| FILE-6310: `/home`, `/var` y `/tmp` en particiones separadas | Exige reparticionar el disco de un sistema ya instalado, con riesgo de perder datos. Se recomienda al instalar equipos nuevos. |
+| BOOT-5122: contraseña en GRUB | Solo protege frente a quien tiene acceso físico al equipo, y sin cifrado de disco ese atacante puede leer el disco igualmente. Se recomienda junto con el cifrado de disco en portátiles. |
+| SSH-7408: endurecer la configuración de SSH | Son equipos de usuario que no deben ofrecer SSH; UFW ya bloquea el puerto 22 entrante. |
+| HRDN-7222: restringir los compiladores a root | El PDI y el personal técnico compilan código en sus equipos; quitarles el compilador rompería su trabajo. |
+| AUTH-9286 y AUTH-9282: edad mínima de contraseña y caducidad de cuentas | Se aplicó la caducidad de 90 días, que es la medida principal. La edad mínima solo evita que el usuario vuelva enseguida a su contraseña anterior. |
+| NETW-3200: protocolos `dccp`, `sctp`, `rds` y `tipc` | No se usan y se podrían bloquear igual que los módulos USB. Se deja como siguiente paso para no ampliar el alcance del script. |
+| ACCT-9630 y ACCT-9626: auditd sin reglas y sysstat sin activar | Están instalados pero sin configurar, igual que AIDE (ver Conclusiones). |
+| LOGG-2154: enviar los logs a un servidor externo | Necesita un servidor central de logs, que no existe en este entorno. |
+
+No se saltó ningún test con el perfil `custom.prf`, para no subir el índice de forma artificial.
+
+**Warnings del después.** Lynis da un *warning* cuando algo no cumple su política, aunque no sea necesariamente un fallo. En los tres equipos aparece FINT-4316 (AIDE sin base de datos, ver Conclusiones). En Ubuntu aparece además MAIL-8818: el banner SMTP de postfix muestra el nombre del software. Lo provoca el propio bastionado, porque rkhunter y AIDE instalan postfix como dependencia; se corrige ocultando el nombre con la opción `smtpd_banner`, o quitando postfix si el equipo no envía correo. En Debian aparecen PKGS-7392 (paquetes con vulnerabilidades conocidas, que se corrige actualizando con `apt upgrade`) y NETW-2704/2705, que vienen de que la VM tenía configurado un servidor DNS IPv6 que no respondía y no son un problema de seguridad.
 
 Evidencias: `evidencias/sistemas/Ubuntu/`, `evidencias/sistemas/Debian/` y `evidencias/sistemas/Kali/`, con los logs y `report.dat` de Lynis y capturas de las tres pasadas: `PrimerTest*.png` (inicial), `SegundoTestFirewall*.png` (tras el firewall) y `TercerTestHardeningCompleto*.png` (final).
 
 ### 1.3 Conclusiones
 
-Con un único script, idempotente y aplicable sin cambios a las tres distribuciones, los tres equipos pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos; la mayor mejora (6-8 puntos) viene de las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu, Debian y Kali les falta sobre todo detectar y registrar lo que ocurre en el sistema.
+Con un único script, idempotente y aplicable sin cambios a las tres distribuciones, los tres equipos pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos y el resto de grupos 6-8, la mayor parte de ellos por las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu, Debian y Kali les falta sobre todo detectar y registrar lo que ocurre en el sistema.
 
-Queda una tarea pendiente en los tres equipos: el script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros. Lynis lo avisa en la pasada final (FINT-4316).
+La revisión de los logs también mostró que no basta con que el script termine sin errores: el banner y el `UMASK` se aplicaron sin fallar, pero Lynis no los cuenta, por el idioma del banner y porque la línea `UMASK` no existe en Debian ni en Kali. Hay que comprobar en el log de Lynis que cada medida suma.
+
+Quedan pendientes en los tres equipos la configuración de las herramientas instaladas. El script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros (Lynis lo avisa con FINT-4316). Lo mismo pasa con auditd, que se instala sin reglas. Los siguientes pasos serían inicializar AIDE, definir reglas de auditd, corregir el banner y el `UMASK`, y bloquear los protocolos de red que no se usan.
 
 ## 2. Análisis y bastionado de navegador web
 
@@ -123,11 +139,13 @@ Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps
 
 ### 4.1 Descripción del sistema web y herramientas
 
-El objetivo es SOS-hardened, un fork propio del proyecto SOS2526-11 (asignatura SOS, curso anterior), con el mismo autor como uno de los tres contribuidores originales. Se audita en local, nunca contra la URL real que el equipo de SOS tiene desplegada en Render, por tratarse de un servicio compartido con terceros ajenos a esta práctica.
+El objetivo es SOS-hardened, un fork del proyecto SOS2526-11 (asignatura SOS, curso anterior), del que uno de los integrantes de este equipo es coautor. Se audita en local, nunca contra la URL real que el equipo de SOS tiene desplegada en Render, por tratarse de un servicio compartido con terceros ajenos a esta práctica.
 
-La guía de la asignatura propone DVWA como objetivo. Se usa SOS-hardened en su lugar porque cumple igual la norma de "solo entornos propios o de pruebas" y porque una revisión inicial del código ya mostraba fallos reales, sin necesidad de un laboratorio construido a propósito.
+El enunciado permite auditar "aplicaciones en desarrollo propias", además de los entornos de pruebas que propone (DVWA, OWASP Juice Shop, WebGoat…). Se eligió SOS-hardened porque es una aplicación propia que no está en producción, y porque sus fallos son reales y no se han puesto a propósito, como pasa en esos laboratorios.
 
 Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autenticación JWT; frontend SvelteKit. Herramientas: OWASP ZAP 2.17 como proxy de interceptación y para las pruebas (Spider, Requester y Fuzzer), y `hashcat` (modo 16500, JWT) para comprobar la fortaleza del secreto de firma.
+
+Las vulnerabilidades se clasifican según OWASP Top 10:2021, la edición con la que ZAP 2.17 etiqueta sus alertas. En la edición 2025 equivalen a A01 (control de acceso roto), A04 (fallos criptográficos), A07 (fallos de autenticación), A05 (inyección), A03 (fallos en la cadena de suministro de software) y A02 (configuración de seguridad incorrecta).
 
 ### 4.2 Plan de pruebas y resultados
 
@@ -165,6 +183,8 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 
 **Dependencias desactualizadas (A06:2021), adicional.** `npm audit` reporta 35 vulnerabilidades (11 moderate, 19 high, 5 critical). La más relevante es `nedb`, la propia base de datos de la aplicación en producción: tiene una vulnerabilidad crítica de Prototype Pollution sin parche disponible. El resto de las críticas y altas vienen de dependencias de testing (`newman`, `postman-*`), no de producción.
 
+**Cabeceras de seguridad (A05:2021), adicional.** El escaneo pasivo de ZAP sobre el tráfico capturado da 5 alertas de configuración, repetidas en las respuestas de la aplicación. Faltan la cabecera `Content-Security-Policy` y la protección anti-clickjacking (`X-Frame-Options`), falta `X-Content-Type-Options: nosniff`, el servidor anuncia su tecnología con `X-Powered-By: Express`, y la API responde con `Access-Control-Allow-Origin: *`, porque el backend usa `cors()` sin opciones. Ninguna es explotable por sí sola, pero quitan capas de defensa. Sin CSP, nada frenaría un script inyectado que llegara a ejecutarse, y la aplicación guarda HTML sin sanear (ver más abajo). Sin protección anti-clickjacking, otra web puede cargar la aplicación dentro de un iframe. `X-Powered-By` le ahorra al atacante identificar el framework. El CORS abierto permite que cualquier web lea las respuestas de la API desde el navegador de quien la visite, aunque aquí el impacto es bajo, porque los datos de lectura son públicos y el token no va en una cookie.
+
 **SQL Injection, XSS y Path Traversal (vectores que cita el enunciado).** Se probaron también estos tres vectores, aunque la aplicación no usa SQL (NeDB no es relacional, por lo que la inyección equivalente es la NoSQL ya descrita en la vulnerabilidad 4):
 
 - *Path Traversal*: 8 variantes de escape de directorio (`../../..`, codificación simple y doble, `....//`) contra la carpeta estática y contra rutas de la API. Las 8 devuelven `404`. No vulnerable: SvelteKit sirve los estáticos con su propio manejador, sin exponer el sistema de ficheros, y las rutas de la API no toman ningún parámetro de ruta o nombre de fichero.
@@ -172,6 +192,8 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 - *XSS almacenado*: un registro con `nation = "<img src=x onerror=alert(document.domain)>"` se guarda y se devuelve igual por la API: el valor es un string, así que pasa el control de tipo, pero nadie valida ni limpia su contenido. El frontend lo muestra en tablas con Svelte, que escapa el texto por defecto, y en gráficos con Highcharts, que filtra etiquetas y atributos peligrosos; no se llegó a confirmar la ejecución del script en el navegador, así que se reporta como entrada sin sanear y no como XSS confirmado. La prueba se hizo con un token válido sobre la versión ya corregida, por lo que este punto sigue abierto después de la mitigación (ver 4.4).
 
 Evidencia de los tres en `evidencias/web/xss-path-traversal-2026-11-08.log`.
+
+**CSRF.** No aplica. El frontend guarda el token en `sessionStorage` y lo envía en la cabecera `Authorization`, que el navegador no añade por su cuenta a las peticiones que lanza otra web. Sin una cookie de sesión, una web ajena no puede hacer peticiones autenticadas en nombre del usuario.
 
 Evidencia (peticiones, respuestas, resultados de hashcat y log de `npm audit`) en `evidencias/web/capturas/` y `evidencias/web/npm-audit-2026-11-06.log`; informe HTML generado por ZAP en `evidencias/web/2026-11-06-ZAP-Report-localhost.html` y exportación del tráfico capturado en `evidencias/web/zap-history-export.csv`; notas detalladas en `evidencias/web/notas-sesion.md`.
 
@@ -185,20 +207,28 @@ Repitiendo exactamente los mismos ataques de la sección 4.2:
 |---|---|---|
 | Acceso sin autenticación | 5/6 endpoints en `200 OK` sin credenciales | 6/6 en `403 Forbidden` |
 | Secreto JWT filtrado | Token forjado con el secreto expuesto, aceptado | Rechazado (`401`); secreto rotado y fuera del código |
-| Credenciales hardcodeadas | `admin`/`admin` funcionaba | Rechazado (`401`); credenciales aleatorias en `.env` |
+| Credenciales por defecto | `admin`/`admin` funcionaba | Rechazado (`401`); credenciales aleatorias en `.env` |
 | Inyección NoSQL | El operador `$ne` alteraba el resultado de la consulta | El operador se descarta antes de llegar a la base de datos (verificado comparando `nation[$ne]=Spain` contra la consulta sin filtro: ambas devuelven el mismo número de resultados, 150, cuando una inyección real habría dado 147) |
 
 Se comprobó también que la funcionalidad legítima sigue intacta: el login con las credenciales nuevas devuelve un token válido, y ese token permite realizar un `PUT` real sobre un recurso.
 
+Para lo que no se corrigió en el código, el plan de mitigación recomienda estos controles:
+
+| Hallazgo | Control recomendado |
+|---|---|
+| Cabeceras de seguridad (A05) | Añadir el middleware `helmet` en Express, que pone CSP, `X-Frame-Options` y `X-Content-Type-Options` y quita `X-Powered-By`; limitar `cors()` al dominio del propio frontend |
+| Entrada sin sanear (XSS almacenado) | Validar el contenido de los campos de texto en el servidor (por ejemplo, permitir solo letras, espacios y guiones en `nation`) y mantener el escapado del frontend |
+| Dependencias vulnerables (A06) | Ejecutar `npm audit fix`, sacar las dependencias de testing del build de producción y migrar de `nedb`, que no publica versiones desde 2016 (1.8.0), a una alternativa mantenida como `@seald-io/nedb` |
+| Secreto expuesto en el historial de git | Tratarlo como comprometido: rotarlo (ya hecho) y no reutilizarlo en ningún otro despliegue |
+
 ### 4.4 Conclusiones
 
-El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos, así que la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Quedan como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica, y la validación del contenido de los campos de texto en los `POST`/`PUT`, que hoy aceptan HTML y solo están protegidos por el escapado del frontend.
+El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos, así que la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Quedan como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica; la validación del contenido de los campos de texto en los `POST`/`PUT`, que hoy aceptan HTML y solo están protegidos por el escapado del frontend; y las cabeceras de seguridad. Para las tres hay un control concreto en el plan de mitigación (4.3).
 
 ## Referencias
 
-_(no cuentan para las 15 páginas)_
-
 - OWASP. *OWASP Top 10:2021*. https://owasp.org/Top10/
+- OWASP. *OWASP Top 10:2025*. https://owasp.org/Top10/2025/
 - CIS (Center for Internet Security). *CIS Benchmarks*. https://www.cisecurity.org/cis-benchmarks
 - NIST. *SP 800-115: Technical Guide to Information Security Testing and Assessment*. https://csrc.nist.gov/pubs/sp/800/115/final
 - España. Real Decreto 311/2022, de 3 de mayo, por el que se regula el Esquema Nacional de Seguridad (ENS), categoría Alta. CCN-CERT. https://www.ccn-cert.cni.es/
@@ -207,4 +237,11 @@ _(no cuentan para las 15 páginas)_
 
 ## Anexos
 
-_(logs largos y capturas extra; no cuentan para las 15 páginas)_
+Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los scripts y configuraciones usados:
+
+- `sistemas/`: `hardening.sh`, `run_lynis.sh`, `sysctl-hardening.conf` y `custom.prf`.
+- `evidencias/sistemas/Ubuntu/`, `Debian/` y `Kali/`: logs de Lynis (`lynis-*.log`), datos del informe (`report-*.dat`) y capturas de cada pasada.
+- `movil/`: script `auditar_android.sh` y `checklist.md` con el antes y el después de cada móvil.
+- `evidencias/movil/`: volcados de ADB antes y después de cada móvil, y capturas de Malwarebytes y de los ajustes revisados a mano.
+- `web/`: payloads del fuzzing (`payloads/`) y parche de la mitigación (`mitigacion-sos-hardened.patch`).
+- `evidencias/web/`: informe HTML de ZAP, exportación del historial de ZAP (`zap-history-export.csv`), log de `npm audit`, log de las pruebas de XSS y Path Traversal, log de la verificación antes/después de la mitigación, notas de la sesión y capturas numeradas por vulnerabilidad (`capturas/#1-*` a `#5-*`).

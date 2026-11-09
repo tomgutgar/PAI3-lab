@@ -13,7 +13,7 @@
 
 - **Una** app de análisis en el móvil: **Malwarebytes** o **Koodous** (elige una). Es la herramienta principal que pide el enunciado.
 - **ADB** en el PC para los logs. Se instala con las *platform-tools* de Google: https://developer.android.com/tools/releases/platform-tools
-- *(Opcional, solo si quieres reforzar el punto B2)* PCAPdroid en el móvil para ver conexiones en segundo plano. No es obligatorio.
+- Para el punto B2, `conexiones_b2.sh` lista por ADB las conexiones abiertas y la app que tiene cada una (con Chrome en uso).
 
 ## Paso a paso
 
@@ -36,7 +36,7 @@
 | A4 | Sin Wi-Fi inseguras | `adb shell cmd wifi list-networks` |
 | A5 | Bluetooth apagado | `adb shell settings get global bluetooth_on` |
 | B1 | Sin malware | escaneo + `adb shell pm list packages -3 -i` |
-| B2 | Sin conexiones de fondo raras | (opcional) PCAPdroid |
+| B2 | Sin conexiones de fondo raras | `conexiones_b2.sh` con Chrome abierto |
 | B3 | Sin permisos peligrosos | `settings get secure enabled_accessibility_services`, overlay, almacenamiento |
 
 ## Qué entregar
