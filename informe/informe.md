@@ -12,7 +12,7 @@ PAI-3 VULNAWEB · Security Team 5 · Integrantes: Miguel Ridao y Tomás Gutiérr
 
 - Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu, de 64 a 71 en Debian y de 64 a 73 en Kali, los tres por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd).
 - Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido; tras la corrección, los 6 rechazan las peticiones sin un token válido.
-- Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro), corregidos y verificados después.
+- Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido y apps de terceros con conexiones abiertas en segundo plano en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro), corregidos y verificados después.
 
 ## 1. Auditoría de sistemas informáticos
 
@@ -100,7 +100,7 @@ Quedan pendientes en los tres equipos la configuración de las herramientas inst
 
 ### 3.1 Descripción del sistema analizado y herramientas
 
-Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **Pixel 9 Pro** y un **Pixel 10**, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron 7 de los 8 puntos de la política (A1-A5, B1 y B3; el B2 es opcional y no se comprobó) mediante **ADB** (Android Debug Bridge), con un script propio (`movil/auditar_android.sh`) que vuelca por consola el estado de cada punto comprobable, y **Malwarebytes** como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
+Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **Pixel 9 Pro** y un **Pixel 10**, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política en el Pixel 9 Pro y 7 en el Pixel 10, donde no se pudo comprobar el B2 por no tener el móvil disponible. Las comprobaciones se hicieron mediante **ADB** (Android Debug Bridge), con dos scripts propios: `movil/auditar_android.sh`, que vuelca por consola el estado de cada punto comprobable, y `movil/conexiones_b2.sh`, que lista las conexiones abiertas y la app que tiene cada una (punto B2); y **Malwarebytes** como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
 
 ### 3.2 Plan de pruebas y resultados
 
@@ -116,14 +116,16 @@ Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **
 | A4. Sin Wi-Fi inseguras | Cumple | **No cumplía** |
 | A5. Bluetooth apagado | **No cumplía** | Cumple |
 | B1. Sin malware | Cumple | Cumple |
-| B2. Sin conexiones de fondo no autorizadas | No comprobado (opcional) | No comprobado (opcional) |
+| B2. Sin conexiones de fondo no autorizadas | **No cumplía** | No comprobado |
 | B3. Sin permisos peligrosos | Cumple | Cumple |
 
 El punto A1 se comprobó a mano en cada móvil (Ajustes → Instalar aplicaciones desconocidas: ninguna app con el permiso concedido) y el A3 en Ajustes → Actualizaciones de software y en la ficha de Chrome en Play Store, porque el script solo da el nivel de parche.
 
-En el Pixel 9 Pro el único fallo fue el Bluetooth encendido, corregido apagándolo. En el Pixel 10 hubo dos. El primero, A3: el sistema estaba al día, pero Chrome tenía una actualización pendiente en Play Store, y se corrigió actualizándolo (la ficha pasa de "Actualizar" a "Abrir"). El segundo, A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después. El punto B2 (conexiones de fondo) es opcional según el README de esta parte y no se comprobó, al no usarse PCAPdroid.
+En el Pixel 9 Pro el único fallo fue el Bluetooth encendido, corregido apagándolo. En el Pixel 10 hubo dos. El primero, A3: el sistema estaba al día, pero Chrome tenía una actualización pendiente en Play Store, y se corrigió actualizándolo (la ficha pasa de "Actualizar" a "Abrir"). El segundo, A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después.
 
-Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/`; capturas del escaneo de Malwarebytes, del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
+**Punto B2 (Pixel 9 Pro).** Con Chrome abierto y navegando, `conexiones_b2.sh` lee las tablas de conexiones del kernel (`/proc/net/tcp`, `tcp6`, `udp` y `udp6`), que incluyen el UID de cada conexión, y las cruza con `pm list packages -U` para saber qué app tiene cada una. Se incluye UDP porque Chrome y otras apps de Google usan QUIC, que va sobre UDP; con solo TCP no habría aparecido ninguna app de terceros. Se consideran autorizados el navegador y los componentes preinstalados del sistema (servicios de Google Play, Play Store, pila de red, búsqueda y widget del tiempo). En la primera pasada había 42 conexiones de 8 apps, y entre ellas tres apps que el usuario había abierto antes y seguían conectadas en segundo plano: dos de terceros, `com.chess` y `com.anthropic.claude`, y YouTube. Se corrigió forzando su detención (`adb shell am force-stop`), y en la segunda pasada, también con Chrome en uso, quedan 26 conexiones, todas de Chrome o de componentes del sistema. Esta comprobación no se pudo hacer en el Pixel 10.
+
+Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/` (`auditoria.txt` y, en el Pixel 9 Pro, `conexiones-b2.txt`); capturas del escaneo de Malwarebytes, del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
 
 ![Pixel 10: Chrome con actualización pendiente en Play Store (A3)](../evidencias/movil/pixel10-antes/a3-chrome-desactualizado.png)
 
@@ -133,7 +135,7 @@ Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil
 
 ### 3.3 Conclusiones
 
-Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero los dos tenían fallos de higiene: el Pixel 9 Pro con el Bluetooth encendido sin necesidad, y el Pixel 10 con el navegador sin actualizar y arrastrando redes Wi-Fi abiertas de sitios públicos. Ninguno es grave por sí solo, pero todos amplían la superficie de ataque: con el Bluetooth activo hay más vías de conexión no solicitada, un navegador desactualizado puede tener vulnerabilidades ya públicas, y una red abierta guardada permite que el móvil se reconecte solo a una red que puede estar controlada por un atacante. Son fallos que se acumulan con el uso diario sin que el usuario lo note, así que conviene revisarlos de forma periódica y no solo una vez.
+Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero los dos tenían fallos de higiene: el Pixel 9 Pro con el Bluetooth encendido sin necesidad y apps cerradas que seguían conectadas en segundo plano, y el Pixel 10 con el navegador sin actualizar y arrastrando redes Wi-Fi abiertas de sitios públicos. Ninguno es grave por sí solo, pero todos amplían la superficie de ataque: con el Bluetooth activo hay más vías de conexión no solicitada, una app que sigue conectada en segundo plano mientras se usa el navegador corporativo podría enviar datos sin que el usuario lo sepa, un navegador desactualizado puede tener vulnerabilidades ya públicas, y una red abierta guardada permite que el móvil se reconecte solo a una red que puede estar controlada por un atacante. Son fallos que se acumulan con el uso diario sin que el usuario lo note, así que conviene revisarlos de forma periódica y no solo una vez.
 
 ## 4. Auditoría de sistema web
 
@@ -241,7 +243,7 @@ Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los s
 
 - `sistemas/`: `hardening.sh`, `run_lynis.sh`, `sysctl-hardening.conf` y `custom.prf`.
 - `evidencias/sistemas/Ubuntu/`, `Debian/` y `Kali/`: logs de Lynis (`lynis-*.log`), datos del informe (`report-*.dat`) y capturas de cada pasada.
-- `movil/`: script `auditar_android.sh` y `checklist.md` con el antes y el después de cada móvil.
+- `movil/`: scripts `auditar_android.sh` y `conexiones_b2.sh`, y `checklist.md` con el antes y el después de cada móvil.
 - `evidencias/movil/`: volcados de ADB antes y después de cada móvil, y capturas de Malwarebytes y de los ajustes revisados a mano.
 - `web/`: payloads del fuzzing (`payloads/`) y parche de la mitigación (`mitigacion-sos-hardened.patch`).
 - `evidencias/web/`: informe HTML de ZAP, exportación del historial de ZAP (`zap-history-export.csv`), log de `npm audit`, log de las pruebas de XSS y Path Traversal, log de la verificación antes/después de la mitigación, notas de la sesión y capturas numeradas por vulnerabilidad (`capturas/#1-*` a `#5-*`).
