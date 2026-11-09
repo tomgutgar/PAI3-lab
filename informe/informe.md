@@ -19,7 +19,7 @@ El trabajo sigue el esquema de NIST SP 800-115 (auditar, corregir y volver a aud
 
 ## 1. Auditoría de sistemas informáticos
 
-### 1.1 Descripción del sistema analizado y herramientas
+### 1.1 Descripción del sistema analizado y herramientas de análisis
 
 Se han auditado 3 equipos, cada uno con una distribución Linux distinta: dos máquinas virtuales instaladas desde la ISO oficial de su última versión estable, Ubuntu 24.04.5 LTS (última LTS) y Debian 13, y un portátil físico de uso diario con Kali Linux Rolling. Usar tres distribuciones permite comprobar que las medidas de bastionado son portables. Antes de bastionar se tomó un *snapshot* de cada VM. En el portátil no hay snapshot, así que antes de empezar se dejó el sistema sin ninguna medida aplicada, devolviendo cada fichero que toca el script a su contenido original (comprobado con el md5 que guarda el paquete), y se reinició para descargar los parámetros del kernel.
 
@@ -125,7 +125,7 @@ Con un único fichero de políticas, desplegado por script y sin tocar los ajust
 
 ## 3. Auditoría de sistema móvil
 
-### 3.1 Descripción del sistema analizado y herramientas
+### 3.1 Descripción del sistema analizado y herramientas de análisis
 
 Se auditaron 2 móviles Android personales (BYOD), ambos Google Pixel: un Pixel 9 Pro y un Pixel 10, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política en los dos móviles. Las comprobaciones se hicieron mediante ADB (Android Debug Bridge), con dos scripts propios: `movil/auditar_android.sh`, que vuelca por consola el estado de cada punto comprobable, y `movil/conexiones_b2.sh`, que lista las conexiones abiertas y la app que tiene cada una (punto B2); y Malwarebytes como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1. Se eligió Malwarebytes frente a MobSF o Koodous porque analiza el móvil completo desde el propio dispositivo y sin root; MobSF analiza APKs sueltos y está pensado para auditar una app concreta, no la postura de un dispositivo.
 
@@ -160,7 +160,7 @@ Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps
 
 ## 4. Auditoría de sistema web
 
-### 4.1 Descripción del sistema web y herramientas
+### 4.1 Descripción del sistema web y herramientas de análisis
 
 El objetivo es SOS-hardened, un fork del proyecto SOS2526-11 (asignatura SOS, curso anterior), del que uno de los integrantes de este equipo es coautor. Se audita en local, nunca contra la URL real que el equipo de SOS tiene desplegada en Render, por tratarse de un servicio compartido con terceros ajenos a esta práctica.
 
