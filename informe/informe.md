@@ -11,16 +11,17 @@ PAI-3 VULNAWEB · Security Team 5 · Integrantes: Miguel Ridao y Tomás Gutiérr
 ## Resumen ejecutivo
 
 - Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu, de 64 a 71 en Debian y de 64 a 73 en Kali, los tres por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd).
-- Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido; tras la corrección, los 6 rechazan las peticiones sin un token válido.
+- Navegador: una política corporativa de Firefox, desplegada por script, fuerza HTTPS y DNS cifrado, impide guardar contraseñas y sube la protección contra el rastreo de "parcial" a "fuerte" en Cover Your Tracks.
 - Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro; y en los dos, apps de terceros con conexiones abiertas en segundo plano), corregidos y verificados después.
+- Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido; tras la corrección, los 6 rechazan las peticiones sin un token válido.
 
 ## 1. Auditoría de sistemas informáticos
 
 ### 1.1 Descripción del sistema analizado y herramientas
 
-Se han auditado **3 equipos**, cada uno con una distribución Linux distinta: dos máquinas virtuales instaladas desde la ISO oficial de su última versión estable, **Ubuntu 24.04.5 LTS** (última LTS) y **Debian 13**, y un portátil físico de uso diario con **Kali Linux Rolling**. Usar tres distribuciones permite comprobar que las medidas de bastionado son portables y no dependen de una distribución concreta. Antes de bastionar se tomó un *snapshot* de cada VM. En el portátil no hay snapshot, así que antes de empezar se dejó el sistema sin ninguna medida aplicada, devolviendo cada fichero que toca el script a su contenido original (comprobado con el md5 que guarda el paquete), y se reinició para descargar los parámetros del kernel.
+Se han auditado 3 equipos, cada uno con una distribución Linux distinta: dos máquinas virtuales instaladas desde la ISO oficial de su última versión estable, Ubuntu 24.04.5 LTS (última LTS) y Debian 13, y un portátil físico de uso diario con Kali Linux Rolling. Usar tres distribuciones permite comprobar que las medidas de bastionado son portables. Antes de bastionar se tomó un *snapshot* de cada VM. En el portátil no hay snapshot, así que antes de empezar se dejó el sistema sin ninguna medida aplicada, devolviendo cada fichero que toca el script a su contenido original (comprobado con el md5 que guarda el paquete), y se reinició para descargar los parámetros del kernel.
 
-La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de controles y devuelve un *hardening index* de 0 a 100. Se ejecuta antes y después del bastionado para medir la mejora. El bastionado se aplica con el script propio **`sistemas/hardening.sh`**, idempotente y organizado por grupos que corresponden a avisos concretos de Lynis. Las tres distribuciones usan `apt` (Kali está basada en Debian), así que el mismo script sirve sin cambios en las tres.
+La auditoría se hace con Lynis (perfil por defecto), que revisa cientos de controles y devuelve un *hardening index* de 0 a 100. Se ejecuta antes y después del bastionado para medir la mejora. El bastionado se aplica con el script propio `sistemas/hardening.sh`, idempotente y organizado por grupos que corresponden a avisos concretos de Lynis. Las tres distribuciones usan `apt` (Kali está basada en Debian), así que el mismo script sirve sin cambios en las tres.
 
 #### Herramientas y medidas que aplica `hardening.sh`
 
@@ -34,7 +35,7 @@ La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de 
 | `coredumps` | `* hard core 0` en `limits.conf` | Evita volcados de memoria que podrían contener contraseñas o claves | KRNL-5820 |
 | `herramientas` | **auditd** y **acct** (auditoría y registro de comandos), **sysstat** (estadísticas), **rkhunter** (detección de rootkits), **fail2ban** (bloquea IPs tras intentos fallidos), **AIDE** (integridad de ficheros), **apt-show-versions** (control de parches) | Añade detección y trazabilidad: si hay un ataque, se detecta y queda registrado | ACCT-*, HRDN-7230, FINT-4350, DEB-0880, PKGS-7394 |
 
-**Por qué sube el índice de Lynis:** el *hardening index* se calcula con los controles que superan la comprobación frente al total evaluado. Cada grupo del script resuelve una o varias sugerencias concretas del informe inicial de Lynis (columna derecha), así que cada control corregido suma puntos. Se aplicó por grupos, repitiendo Lynis entre ellos, para ver qué aporta cada medida (capturas en `evidencias/sistemas/`).
+**Por qué sube el índice de Lynis:** el *hardening index* se calcula con los controles que superan la comprobación frente al total evaluado. Cada grupo del script resuelve una o varias sugerencias concretas del informe inicial de Lynis (columna derecha), así que cada control corregido suma puntos. Se aplicó por grupos, repitiendo Lynis entre ellos, para ver qué aporta cada medida (figuras 1 a 9 del anexo).
 
 ### 1.2 Plan de pruebas y resultados
 
@@ -43,19 +44,19 @@ La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de 
 **Procedimiento** (en cada VM, siguiendo el esquema de NIST SP 800-115: auditar, corregir, volver a auditar):
 
 1. `sudo ./run_lynis.sh antes`: auditoría inicial.
-2. `sudo ./hardening.sh firewall` y nueva pasada de Lynis, para medir esta medida por separado. Esta pasada se guardó también con la etiqueta `antes` y sobrescribió el log inicial, así que el índice inicial (64) queda demostrado con la captura `PrimerTest*.png` y el log `antes` corresponde al estado tras el firewall. En Kali esta pasada se guardó con la etiqueta `firewall`, así que se conservan los tres logs.
+2. `sudo ./hardening.sh firewall` y nueva pasada de Lynis, para medir esta medida por separado. Esta pasada se guardó también con la etiqueta `antes` y sobrescribió el log inicial, así que el índice inicial (64) queda demostrado con las capturas de las figuras 1 y 4, y el log `antes` corresponde al estado tras el firewall. En Kali esta pasada se guardó con la etiqueta `firewall`, así que se conservan los tres logs.
 3. `sudo ./hardening.sh`: el resto de grupos.
 4. `sudo ./run_lynis.sh despues`: auditoría final.
 
 **Resultados:**
 
-| Equipo | Índice inicial | Tras firewall | Índice final | Puntos Lynis (tras firewall → final) | Sugerencias (tras firewall → final) |
-|--------|:-----------:|:-------------:|:--------------:|:------------------------------:|:-----------------------------:|
-| Ubuntu 24.04.5 | 64 | 66 | **73** | 206/312 → 242/330 | 44 → 38 |
-| Debian 13      | 64 | 65 | **71** | 214/327 → 246/342 | 49 → 42 |
-| Kali Rolling   | 64 | 65 | **73** | 182/278 → 212/288 | 42 → 35 |
+| Equipo | Índice inicial | Tras firewall | Índice final | Puntos Lynis (tras firewall → final) |
+|--------|:-----------:|:-------------:|:--------------:|:------------------------------:|
+| Ubuntu 24.04.5 | 64 | 66 | **73** | 206/312 → 242/330 |
+| Debian 13      | 64 | 65 | **71** | 214/327 → 246/342 |
+| Kali Rolling   | 64 | 65 | **73** | 182/278 → 212/288 |
 
-Los tres equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests más en la pasada final (269 → 281 en Ubuntu, 278 → 287 en Debian, 263 → 269 en Kali), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
+Los tres equipos superan el objetivo de ≥ 70. Lynis ejecuta algunos tests más en la pasada final (269 → 281 en Ubuntu, 278 → 287 en Debian, 263 → 269 en Kali), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
 
 **Firewall (64 → 66 en Ubuntu, 64 → 65 en Debian).** Con UFW activo y la política "denegar todo lo entrante" (la que recomienda el CIS Benchmark), el índice sube 1-2 puntos. En estas VMs no se puede saber qué test exacto sumó esos puntos, porque el log de la pasada inicial se sobrescribió; en Kali, donde se conservan los tres logs, se vio que vienen de los parámetros de kernel que aplica UFW (párrafo siguiente), y es probable que aquí pase lo mismo.
 
@@ -80,27 +81,62 @@ No se saltó ningún test con el perfil `custom.prf`, para no subir el índice d
 
 **Warnings del después.** Lynis da un *warning* cuando algo no cumple su política, aunque no sea necesariamente un fallo. En los tres equipos aparece FINT-4316 (AIDE sin base de datos, ver Conclusiones). En Ubuntu aparece además MAIL-8818: el banner SMTP de postfix muestra el nombre del software. Lo provoca el propio bastionado, porque rkhunter y AIDE instalan postfix como dependencia; se corrige ocultando el nombre con la opción `smtpd_banner`, o quitando postfix si el equipo no envía correo. En Debian aparecen PKGS-7392 (paquetes con vulnerabilidades conocidas, que se corrige actualizando con `apt upgrade`) y NETW-2704/2705, que vienen de que la VM tenía configurado un servidor DNS IPv6 que no respondía y no son un problema de seguridad.
 
-Evidencias: `evidencias/sistemas/Ubuntu/`, `evidencias/sistemas/Debian/` y `evidencias/sistemas/Kali/`, con los logs y `report.dat` de Lynis y capturas de las tres pasadas: `PrimerTest*.png` (inicial), `SegundoTestFirewall*.png` (tras el firewall) y `TercerTestHardeningCompleto*.png` (final).
+Evidencias: capturas de las tres pasadas de cada equipo en las figuras 1 a 9 del anexo, y logs y `report.dat` de Lynis en `evidencias/sistemas/Ubuntu/`, `Debian/` y `Kali/`. En Debian, Lynis muestra además el aviso "Exceptions found" (figuras 4 y 6): según el log, lo genera el test HTTP-6624, que encuentra en la configuración de Apache rutas que no sabe interpretar. Es un aviso de la propia herramienta, no un fallo de seguridad, y aparece igual antes y después del bastionado.
 
 ### 1.3 Conclusiones
 
-Con un único script, idempotente y aplicable sin cambios a las tres distribuciones, los tres equipos pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos y el resto de grupos 6-8, la mayor parte de ellos por las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu, Debian y Kali les falta sobre todo detectar y registrar lo que ocurre en el sistema.
+Con un único script, idempotente y aplicable sin cambios a las tres distribuciones, los tres equipos pasan de un índice de 64 a 71-73, por encima del 70 exigido. El firewall aporta 1-2 puntos y el resto de grupos 6-8, la mayor parte de ellos por las herramientas de detección y auditoría (rkhunter, fail2ban, AIDE, auditd, acct). A las instalaciones por defecto de Ubuntu, Debian y Kali les falta sobre todo detectar y registrar lo que ocurre en el sistema.
 
-La revisión de los logs también mostró que no basta con que el script termine sin errores: el banner y el `UMASK` se aplicaron sin fallar, pero Lynis no los cuenta, por el idioma del banner y porque la línea `UMASK` no existe en Debian ni en Kali. Hay que comprobar en el log de Lynis que cada medida suma.
+La revisión de los logs mostró además que el banner y el `UMASK` se aplicaron sin errores pero Lynis no los cuenta, por el idioma del banner y porque la línea `UMASK` no existe en Debian ni en Kali. Por eso cada medida debe comprobarse también en el log de Lynis.
 
-Quedan pendientes en los tres equipos la configuración de las herramientas instaladas. El script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros (Lynis lo avisa con FINT-4316). Lo mismo pasa con auditd, que se instala sin reglas. Los siguientes pasos serían inicializar AIDE, definir reglas de auditd, corregir el banner y el `UMASK`, y bloquear los protocolos de red que no se usan.
+Queda pendiente en los tres equipos la configuración de las herramientas instaladas. El script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros (Lynis lo avisa con FINT-4316). Lo mismo pasa con auditd, que se instala sin reglas. Los siguientes pasos serían inicializar AIDE, definir reglas de auditd, corregir el banner y el `UMASK`, y bloquear los protocolos de red que no se usan.
 
 ## 2. Análisis y bastionado de navegador web
 
 ### 2.1 Descripción del sistema analizado
+
+Se bastiona Firefox en la VM `Pai-ubuntu` (Ubuntu 24.04.5, la misma de la Parte 1). Las directivas no se configuran a mano en los ajustes: se aplican como política corporativa, un fichero `policies.json` que Firefox lee al arrancar y que el usuario no puede cambiar. El fichero está en `navegador/firefox/policies.json` y se despliega en `/etc/firefox/policies/` con `sudo navegador/desplegar.sh firefox`.
+
+#### Medidas aplicadas
+
+| Directiva | Valor | Riesgo que mitiga |
+|-----------|-------|-------------------|
+| `HttpsOnlyMode` | `force_enabled` | Tráfico sin cifrar y ataques de *downgrade* a HTTP |
+| `SSLVersionMin` | `tls1.2` | Conexiones con TLS 1.0/1.1, obsoletos |
+| `PasswordManagerEnabled`, `OfferToSaveLogins` | `false` | Robo de las contraseñas guardadas en el navegador |
+| `DisableFormHistory` | `true` | Datos de formularios guardados en el equipo |
+| `DNSOverHTTPS` | activado y bloqueado | Espionaje y manipulación de las consultas DNS |
+| `EnableTrackingProtection` | activado y bloqueado, con bloqueo de criptominado y *fingerprinting* | Rastreo entre webs y huella digital del navegador |
+| `Cookies` | `reject-tracker-and-partition-foreign` | Cookies de rastreo de terceros |
+| `Permissions` (cámara, micrófono, ubicación, notificaciones) | `BlockNewRequests` | Webs que piden permisos intrusivos |
+| `ExtensionSettings` | todo bloqueado salvo uBlock Origin (instalado a la fuerza) | Extensiones maliciosas |
+| `BlockAboutConfig` | `true` | Que el usuario se salte la política desde `about:config` |
+| `DisableTelemetry`, `DisableFirefoxStudies` | `true` | Envío de datos de uso a terceros |
+
+#### Problemas encontrados y cómo se solucionaron
+
+- **Políticas inactivas tras el despliegue.** Aunque el fichero estaba en `/etc/firefox/policies/policies.json`, `about:policies` mostraba "The Enterprise Policies service is inactive". La causa eran los permisos: el fichero se copiaba desde la carpeta compartida de VirtualBox, cuyos ficheros no tienen lectura para "otros", y quedaba como propiedad de root sin permiso de lectura para el usuario que ejecuta Firefox. Se corrigió con `chmod 644` sobre el fichero (y `755` sobre la carpeta), y `desplegar.sh` instala ahora el fichero con `install -m 644` para que no vuelva a pasar.
+- **Firefox no recargaba la política.** En Ubuntu, Firefox es un *snap* y puede seguir en segundo plano después de cerrar la ventana, sin volver a leer la política. Se cierra del todo con `pkill -f firefox` antes de comprobar `about:policies`.
+
 ### 2.2 Plan de pruebas y resultados
+
+| Prueba | Web | Antes | Después | Figuras |
+|--------|-----|-------|---------|:-------:|
+| Política aplicada | `about:policies` | "The Enterprise Policies service is inactive" | Aparecen todas las directivas del `policies.json` | 10, 11 |
+| DNS cifrado | 1.1.1.1/help | DoH: No (resolvía el DNS del operador, Orange) | DoH: **Yes**, conectado a 1.1.1.1 (Cloudflare) | 12, 13 |
+| Rastreo | Cover Your Tracks (EFF) | "Some protection… some gaps": anuncios y rastreadores invisibles bloqueados solo en parte | "**Strong protection**": anuncios y rastreadores invisibles bloqueados | 14, 15 |
+| HTTP sin cifrar | http.badssl.com | Carga la página por HTTP, solo con el aviso "Not Secure" | Bloqueada: aviso "HTTPS-Only Mode Alert · Secure Site Not Available" | 16, 17 |
+| Contraseñas | Login de prueba (the-internet.herokuapp.com) | Firefox ofrece guardar la contraseña | Inicia sesión sin ofrecer guardarla | 18, 19 |
+
 ### 2.3 Conclusiones
+
+Con un único fichero de políticas, desplegado por script y sin tocar los ajustes a mano, mejoran las cinco pruebas: el tráfico sin cifrar se bloquea, el DNS va cifrado, el navegador ya no guarda contraseñas y la protección contra el rastreo pasa de parcial a fuerte. Al ser una política del sistema, el usuario no puede desactivarla, y `about:config` queda bloqueado. Lo único que no cambia es la huella digital: Cover Your Tracks la sigue considerando única, porque la protección estándar de Firefox no la oculta del todo. Ocultarla exigiría `privacy.resistFingerprinting`, que se descarta porque rompe muchas webs. El principal problema del despliegue fueron los permisos del fichero, ya corregidos en el script.
 
 ## 3. Auditoría de sistema móvil
 
 ### 3.1 Descripción del sistema analizado y herramientas
 
-Se auditaron **2 móviles Android** personales (BYOD), ambos Google Pixel: un **Pixel 9 Pro** y un **Pixel 10**, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política en los dos móviles. Las comprobaciones se hicieron mediante **ADB** (Android Debug Bridge), con dos scripts propios: `movil/auditar_android.sh`, que vuelca por consola el estado de cada punto comprobable, y `movil/conexiones_b2.sh`, que lista las conexiones abiertas y la app que tiene cada una (punto B2); y **Malwarebytes** como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
+Se auditaron 2 móviles Android personales (BYOD), ambos Google Pixel: un Pixel 9 Pro y un Pixel 10, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política en los dos móviles. Las comprobaciones se hicieron mediante ADB (Android Debug Bridge), con dos scripts propios: `movil/auditar_android.sh`, que vuelca por consola el estado de cada punto comprobable, y `movil/conexiones_b2.sh`, que lista las conexiones abiertas y la app que tiene cada una (punto B2); y Malwarebytes como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
 
 ### 3.2 Plan de pruebas y resultados
 
@@ -125,13 +161,7 @@ Los dos móviles fallaron en el B2, que se explica más abajo. Aparte, en el Pix
 
 **Punto B2.** En cada móvil, con Chrome abierto y navegando, `conexiones_b2.sh` lee las tablas de conexiones del kernel (`/proc/net/tcp`, `tcp6`, `udp` y `udp6`), que incluyen el UID de cada conexión, y las cruza con `pm list packages -U` para saber qué app tiene cada una. Se incluye UDP porque Chrome y otras apps de Google usan QUIC, que va sobre UDP; con solo TCP no habría aparecido ninguna app de terceros. Se consideran autorizados el navegador y los componentes preinstalados del sistema (servicios de Google Play, Play Store, pila de red, búsqueda y widget del tiempo). En los dos había apps que el usuario había abierto antes y seguían conectadas en segundo plano. En el Pixel 9 Pro, la primera pasada dio 42 conexiones de 8 apps, entre ellas dos de terceros (`com.chess` y `com.anthropic.claude`) y YouTube. En el Pixel 10 dio 115 conexiones de 7 apps, entre ellas dos de terceros, las de los periódicos La Razón (`es.larazon`, con 81 conexiones) y Marca (`com.iphonedroid.marca`), y Google TV. Se corrigió forzando la detención de esas apps (`adb shell am force-stop`). En la segunda pasada, también con Chrome en uso, quedan 26 conexiones en el Pixel 9 Pro y 44 en el Pixel 10, todas de Chrome o de componentes del sistema.
 
-Evidencia: logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/` (`auditoria.txt` y `conexiones-b2.txt`); capturas del escaneo de Malwarebytes, del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
-
-![Pixel 10: Chrome con actualización pendiente en Play Store (A3)](../evidencias/movil/pixel10-antes/a3-chrome-desactualizado.png)
-
-![Escaneo de Malwarebytes en el Pixel 9 Pro, sin amenazas](../evidencias/movil/pixel9pro-antes/malwarebytes-scan.png)
-
-![Escaneo de Malwarebytes en el Pixel 10, sin amenazas](../evidencias/movil/pixel10-antes/malwarebytes-scan.png)
+Evidencia: Chrome desactualizado en el Pixel 10 (figura 20) y escaneos de Malwarebytes sin amenazas (figuras 21 y 22); logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/` (`auditoria.txt` y `conexiones-b2.txt`), y capturas del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
 
 ### 3.3 Conclusiones
 
@@ -151,11 +181,9 @@ Las vulnerabilidades se clasifican según OWASP Top 10:2021, la edición con la 
 
 ### 4.2 Plan de pruebas y resultados
 
-**Trazabilidad del tráfico.** Con ZAP escuchando en `localhost:8082` y Firefox configurado a mano para usar ese proxy también en HTTPS (capturas `#5-zap-proxy-8082.png` y `#5-firefox-proxy-manual.png`) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, y queda demostrado así que todo el tráfico HTTP pasa por el proxy sin alterarse.
+**Trazabilidad del tráfico.** Con ZAP escuchando en `localhost:8082` y Firefox configurado a mano para usar ese proxy también en HTTPS (capturas `#5-zap-proxy-8082.png` y `#5-firefox-proxy-manual.png`) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, lo que demuestra que todo el tráfico HTTP pasa por el proxy sin alterarse.
 
-Para demostrar también la trazabilidad en HTTPS, se importó el certificado raíz de ZAP en Firefox (Autoridades → Importar → "Confiar en esta CA para identificar sitios web") y se navegó con el proxy activo a `https://example.com`, un dominio externo ajeno a esta práctica usado únicamente para comprobar la intercepción. El certificado de esa página, visto desde el propio navegador, tiene como emisor "Zed Attack Proxy Root CA" en vez del emisor real del sitio, lo que confirma que ZAP genera un certificado propio por cada dominio y que el tráfico cifrado pasa igual por el proxy; la petición `https://example.com/` con `200 OK` queda también registrada en la pestaña History. Capturas: `#5-cert-zap-importado.png` (CA de ZAP en Autoridades), `#5-cert-zap-emisor-https.png` (certificado con emisor ZAP) y `#5-zap-history-https.png` (petición HTTPS en History).
-
-![Certificado de example.com emitido por Zed Attack Proxy Root CA](../evidencias/web/capturas/%235-cert-zap-emisor-https.png)
+Para demostrar también la trazabilidad en HTTPS, se importó el certificado raíz de ZAP en Firefox (Autoridades → Importar → "Confiar en esta CA para identificar sitios web") y se navegó con el proxy activo a `https://example.com`, un dominio externo ajeno a esta práctica usado únicamente para comprobar la intercepción. El certificado de esa página, visto desde el propio navegador, tiene como emisor "Zed Attack Proxy Root CA" en vez del emisor real del sitio, lo que confirma que ZAP genera un certificado propio por cada dominio y que el tráfico cifrado pasa igual por el proxy; la petición `https://example.com/` con `200 OK` queda también registrada en la pestaña History. El certificado con emisor ZAP se ve en la figura 23; las capturas `#5-cert-zap-importado.png` (CA de ZAP en Autoridades) y `#5-zap-history-https.png` (petición HTTPS en History) están en `evidencias/web/capturas/`.
 
 **Metodología seguida**, en caja negra: reconocimiento con el Spider de ZAP para mapear las rutas de la aplicación (incluida la API, versionada en `v1` y `v2`, con tres recursos cada una); prueba de autenticación en cada endpoint de escritura, sin ninguna cabecera; localización del endpoint real de login observando el tráfico generado al enviar el formulario; y, una vez obtenido un token, análisis de su cabecera y crackeo del secreto de firma con una wordlist construida a partir de los nombres del equipo visibles en la propia web.
 
@@ -167,21 +195,13 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 | literacy-rates | sin protección | sin protección |
 | road-fatalities | sin protección | sin protección |
 
-5 de 6 aceptan el borrado completo de la colección sin pedir ningún tipo de credencial.
+5 de 6 aceptan el borrado completo de la colección sin pedir ningún tipo de credencial (figura 24).
 
-![DELETE sin autenticación aceptado](../evidencias/web/capturas/%231-acceso-sin-auth.png)
+**Vulnerabilidad 2. Secreto de firma JWT débil y recuperable (A02:2021).** El único endpoint protegido (alcohol v2) usa un token JWT firmado con HS256. Tras obtener un token válido, se guardó y se atacó offline con `hashcat`: el diccionario genérico (`rockyou.txt`) no lo recupera, pero una wordlist de 360 combinaciones (palabras típicas de contraseña + nombres del equipo, sacados de la propia página de inicio) lo crackea en menos de un segundo (figura 25). Con el secreto en mano se puede firmar un token válido para cualquier usuario sin pasar por el login. Aparte, el secreto sigue recuperable en el historial de git aunque se rote en el código actual (repo público); rotarlo en el HEAD no deshace la exposición pasada, por eso se trata como comprometido para siempre y no se intenta "arreglar" reescribiendo el historial.
 
-**Vulnerabilidad 2. Secreto de firma JWT débil y recuperable (A02:2021).** El único endpoint protegido (alcohol v2) usa un token JWT firmado con HS256. Tras obtener un token válido, se guardó y se atacó offline con `hashcat`: el diccionario genérico (`rockyou.txt`) no lo recupera, pero una wordlist de 360 combinaciones (palabras típicas de contraseña + nombres del equipo, sacados de la propia página de inicio) lo crackea en menos de un segundo. Con el secreto en mano se puede firmar un token válido para cualquier usuario sin pasar por el login. Aparte, el secreto sigue recuperable en el historial de git aunque se rote en el código actual (repo público); rotarlo en el HEAD no deshace la exposición pasada, por eso se trata como comprometido para siempre y no se intenta "arreglar" reescribiendo el historial.
+**Vulnerabilidad 3. Credenciales por defecto (A07:2021).** El login de ese mismo endpoint acepta `admin`/`admin` (figura 26).
 
-![Secreto JWT crackeado con hashcat](../evidencias/web/capturas/%232-hashcat-wordlist-crackeado.png)
-
-**Vulnerabilidad 3. Credenciales por defecto (A07:2021).** El login de ese mismo endpoint acepta `admin`/`admin`.
-
-![Login con credenciales admin/admin](../evidencias/web/capturas/%233-login-response.png)
-
-**Vulnerabilidad 4. Inyección NoSQL (A03:2021), adicional.** Los filtros de los `GET` de la API pasan los parámetros de la query string directamente a la base de datos sin comprobar su tipo. Fuzzing con ZAP sobre el parámetro `nation` con 5 operadores de NeDB (`$ne`, `$gt`, `$regex`, `$exists`, `$where`; lista en `web/payloads/nosql.txt` y captura `#4-fuzzer-payloads-nosql.png`) muestra que los 5 se saltan el filtro por igual: la petición de control devuelve 342 bytes (3 resultados), y las 5 inyectadas devuelven 17.148 bytes, el tamaño exacto de la colección completa. El impacto en este endpoint concreto es bajo, porque es público y sin filtro ya devuelve todo; el riesgo real es que el mismo patrón de código, sin saneamiento de tipos, se repite en otros puntos de la aplicación, y que el operador `$where` podría usarse para ejecutar código si se le pasara una función en vez del valor simple usado en la prueba.
-
-![Fuzzer de ZAP con los 5 operadores NoSQL inyectados](../evidencias/web/capturas/%234-fuzzer-nosql-caja-negra.png)
+**Vulnerabilidad 4. Inyección NoSQL (A03:2021), adicional.** Los filtros de los `GET` de la API pasan los parámetros de la query string directamente a la base de datos sin comprobar su tipo. Fuzzing con ZAP sobre el parámetro `nation` con 5 operadores de NeDB (`$ne`, `$gt`, `$regex`, `$exists`, `$where`; lista en `web/payloads/nosql.txt` y captura `#4-fuzzer-payloads-nosql.png`) muestra que los 5 se saltan el filtro por igual (figura 27): la petición de control devuelve 342 bytes (3 resultados), y las 5 inyectadas devuelven 17.148 bytes, el tamaño exacto de la colección completa. El impacto en este endpoint concreto es bajo, porque es público y sin filtro ya devuelve todo; el riesgo está en que el mismo patrón de código, sin saneamiento de tipos, se repite en otros puntos de la aplicación, y que el operador `$where` podría usarse para ejecutar código si se le pasara una función en vez del valor simple usado en la prueba.
 
 **Dependencias desactualizadas (A06:2021), adicional.** `npm audit` reporta 35 vulnerabilidades (11 moderate, 19 high, 5 critical). La más relevante es `nedb`, la propia base de datos de la aplicación en producción: tiene una vulnerabilidad crítica de Prototype Pollution sin parche disponible. El resto de las críticas y altas vienen de dependencias de testing (`newman`, `postman-*`), no de producción.
 
@@ -225,7 +245,7 @@ Para lo que no se corrigió en el código, el plan de mitigación recomienda est
 
 ### 4.4 Conclusiones
 
-El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, no detalles sueltos, así que la corrección no se limitó a parchear un endpoint, sino a centralizar la autenticación y el saneamiento de entrada de forma uniforme en toda la API. Quedan como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica; la validación del contenido de los campos de texto en los `POST`/`PUT`, que hoy aceptan HTML y solo están protegidos por el escapado del frontend; y las cabeceras de seguridad. Para las tres hay un control concreto en el plan de mitigación (4.3).
+El sistema no tenía, en la práctica, control de acceso: la autenticación faltaba en la mayoría de los endpoints de escritura, y donde existía dependía de un secreto adivinable con un diccionario pequeño y de credenciales por defecto nunca cambiadas. Eran fallos de diseño, así que la corrección centraliza la autenticación y el saneamiento de entrada en toda la API. Quedan como deuda técnica no resuelta en esta práctica la actualización de dependencias (`npm audit`), en particular `nedb`, que no tiene parche disponible para su vulnerabilidad crítica; la validación del contenido de los campos de texto en los `POST`/`PUT`, que hoy aceptan HTML y solo están protegidos por el escapado del frontend; y las cabeceras de seguridad. Para las tres hay un control concreto en el plan de mitigación (4.3).
 
 ## Referencias
 
@@ -239,10 +259,132 @@ El sistema no tenía, en la práctica, control de acceso: la autenticación falt
 
 ## Anexos
 
+### Anexo A. Capturas
+
+#### A.1 Sistemas (Lynis)
+
+**Figura 1.** Ubuntu: índice inicial, 64.
+
+![Figura 1](../evidencias/sistemas/Ubuntu/PrimerTest.png)
+
+**Figura 2.** Ubuntu: índice tras activar el firewall, 66.
+
+![Figura 2](../evidencias/sistemas/Ubuntu/SegundoTestFirewall.png)
+
+**Figura 3.** Ubuntu: índice tras el bastionado completo, 73.
+
+![Figura 3](../evidencias/sistemas/Ubuntu/TercerTestHardeningCompleto.png)
+
+**Figura 4.** Debian: índice inicial, 64.
+
+![Figura 4](../evidencias/sistemas/Debian/PrimerTestDebian.png)
+
+**Figura 5.** Debian: índice tras activar el firewall, 65 (extracto de `lynis.log`).
+
+![Figura 5](../evidencias/sistemas/Debian/SegundoTestFirewallDebian.png)
+
+**Figura 6.** Debian: índice tras el bastionado completo, 71.
+
+![Figura 6](../evidencias/sistemas/Debian/TercerTestHardeningCompletoDebian.png)
+
+**Figura 7.** Kali: índice inicial, 64.
+
+![Figura 7](../evidencias/sistemas/Kali/PrimerTestKali.png)
+
+**Figura 8.** Kali: índice tras activar el firewall, 65.
+
+![Figura 8](../evidencias/sistemas/Kali/SegundoTestFirewallKali.png)
+
+**Figura 9.** Kali: índice tras el bastionado completo, 73.
+
+![Figura 9](../evidencias/sistemas/Kali/TercerTestHardeningCompletoKali.png)
+
+#### A.2 Navegador (Firefox)
+
+**Figura 10.** `about:policies` antes de corregir los permisos: servicio de políticas inactivo.
+
+![Figura 10](../evidencias/navegador/antes-policies.png)
+
+**Figura 11.** `about:policies` después: directivas activas.
+
+![Figura 11](../evidencias/navegador/despues-policies.png)
+
+**Figura 12.** 1.1.1.1/help antes: sin DNS over HTTPS.
+
+![Figura 12](../evidencias/navegador/antes-1111.png)
+
+**Figura 13.** 1.1.1.1/help después: DNS over HTTPS activo.
+
+![Figura 13](../evidencias/navegador/despues-1111.png)
+
+**Figura 14.** Cover Your Tracks antes: protección parcial.
+
+![Figura 14](../evidencias/navegador/antes-covertracks.png)
+
+**Figura 15.** Cover Your Tracks después: protección fuerte.
+
+![Figura 15](../evidencias/navegador/despues-covertracks.png)
+
+**Figura 16.** http.badssl.com antes: carga por HTTP sin cifrar.
+
+![Figura 16](../evidencias/navegador/antes-badssl-http.png)
+
+**Figura 17.** http.badssl.com después: bloqueada por el modo solo HTTPS.
+
+![Figura 17](../evidencias/navegador/despues-badssl-http.png)
+
+**Figura 18.** Login de prueba antes: Firefox ofrece guardar la contraseña.
+
+![Figura 18](../evidencias/navegador/antes-contrasena.png)
+
+**Figura 19.** Login de prueba después: inicia sesión sin ofrecer guardarla.
+
+![Figura 19](../evidencias/navegador/despues-contrasena.png)
+
+#### A.3 Móvil
+
+**Figura 20.** Pixel 10: Chrome con actualización pendiente en Play Store (A3).
+
+![Figura 20](../evidencias/movil/pixel10-antes/a3-chrome-desactualizado.png)
+
+**Figura 21.** Pixel 9 Pro: escaneo de Malwarebytes sin amenazas (B1).
+
+![Figura 21](../evidencias/movil/pixel9pro-antes/malwarebytes-scan.png)
+
+**Figura 22.** Pixel 10: escaneo de Malwarebytes sin amenazas (B1).
+
+![Figura 22](../evidencias/movil/pixel10-antes/malwarebytes-scan.png)
+
+#### A.4 Web
+
+**Figura 23.** Certificado de example.com emitido por Zed Attack Proxy Root CA (trazabilidad HTTPS).
+
+![Figura 23](../evidencias/web/capturas/%235-cert-zap-emisor-https.png)
+
+**Figura 24.** `DELETE` sin autenticación aceptado (vulnerabilidad 1).
+
+![Figura 24](../evidencias/web/capturas/%231-acceso-sin-auth.png)
+
+**Figura 25.** Secreto JWT crackeado con hashcat (vulnerabilidad 2).
+
+![Figura 25](../evidencias/web/capturas/%232-hashcat-wordlist-crackeado.png)
+
+**Figura 26.** Login aceptado con `admin`/`admin` (vulnerabilidad 3).
+
+![Figura 26](../evidencias/web/capturas/%233-login-response.png)
+
+**Figura 27.** Fuzzer de ZAP con los 5 operadores NoSQL inyectados (vulnerabilidad 4).
+
+![Figura 27](../evidencias/web/capturas/%234-fuzzer-nosql-caja-negra.png)
+
+### Anexo B. Ficheros de evidencias
+
 Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los scripts y configuraciones usados:
 
 - `sistemas/`: `hardening.sh`, `run_lynis.sh`, `sysctl-hardening.conf` y `custom.prf`.
 - `evidencias/sistemas/Ubuntu/`, `Debian/` y `Kali/`: logs de Lynis (`lynis-*.log`), datos del informe (`report-*.dat`) y capturas de cada pasada.
+- `navegador/`: `firefox/policies.json`, `desplegar.sh` y `directivas.md`.
+- `evidencias/navegador/`: capturas antes y después de cada prueba.
 - `movil/`: scripts `auditar_android.sh` y `conexiones_b2.sh`, y `checklist.md` con el antes y el después de cada móvil.
 - `evidencias/movil/`: volcados de ADB antes y después de cada móvil, y capturas de Malwarebytes y de los ajustes revisados a mano.
 - `web/`: payloads del fuzzing (`payloads/`) y parche de la mitigación (`mitigacion-sos-hardened.patch`).

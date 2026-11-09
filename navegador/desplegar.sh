@@ -12,15 +12,15 @@ case "$NAV" in
   firefox)
     valida "$DIR/firefox/policies.json"
     install -d /etc/firefox/policies
-    cp "$DIR/firefox/policies.json" /etc/firefox/policies/policies.json ;;
+    install -m 644 "$DIR/firefox/policies.json" /etc/firefox/policies/policies.json ;;
   chromium)
     valida "$DIR/chromium/policies.json"
     install -d /etc/chromium/policies/managed
-    cp "$DIR/chromium/policies.json" /etc/chromium/policies/managed/policies.json ;;
+    install -m 644 "$DIR/chromium/policies.json" /etc/chromium/policies/managed/policies.json ;;
   brave)
     valida "$DIR/chromium/policies.json"
     install -d /etc/brave/policies/managed
-    cp "$DIR/chromium/policies.json" /etc/brave/policies/managed/policies.json ;;
+    install -m 644 "$DIR/chromium/policies.json" /etc/brave/policies/managed/policies.json ;;
   *) echo "Navegador no soportado: $NAV"; exit 1 ;;
 esac
 echo "Politicas desplegadas para $NAV. Verifica en about:policies / chrome://policy."
