@@ -12,7 +12,7 @@ PAI-3 VULNAWEB · Security Team 5 · Integrantes: Miguel Ridao y Tomás Gutiérr
 
 - Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu, de 64 a 71 en Debian y de 64 a 73 en Kali, los tres por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd).
 - Navegador: una política corporativa de Firefox, desplegada por script, fuerza HTTPS y DNS cifrado, impide guardar contraseñas y sube la protección contra el rastreo de "parcial" a "fuerte" en Cover Your Tracks.
-- Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro; y en los dos, apps de terceros con conexiones abiertas en segundo plano), corregidos y verificados después.
+- Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar, Wi-Fi abiertas u ocultas guardadas y apps de terceros con permiso para leer las descargas en el otro; y en los dos, apps de terceros con conexiones abiertas en segundo plano), corregidos y verificados después.
 - Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido; tras la corrección, los 6 rechazan las peticiones sin un token válido.
 
 ## 1. Auditoría de sistemas informáticos
@@ -41,7 +41,7 @@ La auditoría se hace con Lynis (perfil por defecto), que revisa cientos de cont
 
 **Equipos.** `Pai-ubuntu` (Ubuntu 24.04.5 LTS) y `pai-debian` (Debian 13), auditados con Lynis 3.1.8 el 2-nov-2026, y `RIDAO` (Kali Linux Rolling, kernel 7.1.5, portátil físico), auditado con Lynis 3.1.7 el 9-nov-2026.
 
-**Procedimiento** (en cada VM, siguiendo el esquema de NIST SP 800-115: auditar, corregir, volver a auditar):
+**Procedimiento** (en cada equipo, siguiendo el esquema de NIST SP 800-115: auditar, corregir, volver a auditar):
 
 1. `sudo ./run_lynis.sh antes`: auditoría inicial.
 2. `sudo ./hardening.sh firewall` y nueva pasada de Lynis, para medir esta medida por separado. Esta pasada se guardó también con la etiqueta `antes` y sobrescribió el log inicial, así que el índice inicial (64) queda demostrado con las capturas de las figuras 1 y 4, y el log `antes` corresponde al estado tras el firewall. En Kali esta pasada se guardó con la etiqueta `firewall`, así que se conservan los tres logs.
@@ -64,18 +64,7 @@ Los tres equipos superan el objetivo de ≥ 70. Lynis ejecuta algunos tests más
 
 **Medidas que no surtieron efecto.** Al revisar los logs del después se ven dos medidas del script que no llegaron a contar. La primera es el banner: Lynis no comprueba solo que `/etc/issue` exista, sino que contenga al menos 5 palabras clave de una lista en inglés (*authorized*, *monitor*, *prohibited*, *legal*…). El texto que pone el script está en español y da 0 coincidencias ("Found only 0 key words" en el log), así que BANN-7126 y BANN-7130 siguen como sugerencia en los tres equipos. La segunda es el `UMASK 027`: el script lo aplica con un `sed` que sustituye la línea `UMASK` de `/etc/login.defs`, pero en Debian 13 y en Kali esa línea no existe, el `sed` no cambia nada y AUTH-9328 sigue como sugerencia; solo se aplicó en Ubuntu. Las dos tienen una corrección sencilla: un banner bilingüe que incluya esas palabras en inglés, y añadir la línea `UMASK 027` cuando no exista. Los índices de la tabla corresponden al script tal como está en el repositorio, sin esta corrección.
 
-**Sugerencias de Lynis que no se aplicaron.** Después del bastionado quedan entre 35 y 42 sugerencias por equipo. Las principales y el motivo para no aplicarlas:
-
-| Sugerencia | Motivo |
-|---|---|
-| FILE-6310: `/home`, `/var` y `/tmp` en particiones separadas | Exige reparticionar el disco de un sistema ya instalado, con riesgo de perder datos. Se recomienda al instalar equipos nuevos. |
-| BOOT-5122: contraseña en GRUB | Solo protege frente a quien tiene acceso físico al equipo, y sin cifrado de disco ese atacante puede leer el disco igualmente. Se recomienda junto con el cifrado de disco en portátiles. |
-| SSH-7408: endurecer la configuración de SSH | Son equipos de usuario que no deben ofrecer SSH; UFW ya bloquea el puerto 22 entrante. |
-| HRDN-7222: restringir los compiladores a root | El PDI y el personal técnico compilan código en sus equipos; quitarles el compilador rompería su trabajo. |
-| AUTH-9286 y AUTH-9282: edad mínima de contraseña y caducidad de cuentas | Se aplicó la caducidad de 90 días, que es la medida principal. La edad mínima solo evita que el usuario vuelva enseguida a su contraseña anterior. |
-| NETW-3200: protocolos `dccp`, `sctp`, `rds` y `tipc` | No se usan y se podrían bloquear igual que los módulos USB. Se deja como siguiente paso para no ampliar el alcance del script. |
-| ACCT-9630 y ACCT-9626: auditd sin reglas y sysstat sin activar | Están instalados pero sin configurar, igual que AIDE (ver Conclusiones). |
-| LOGG-2154: enviar los logs a un servidor externo | Necesita un servidor central de logs, que no existe en este entorno. |
+**Sugerencias de Lynis que no se aplicaron.** Después del bastionado quedan entre 35 y 42 sugerencias por equipo. Las principales y el motivo para no aplicar cada una están en el Anexo C. En resumen, se descartaron las que exigen reparticionar o reinstalar (particiones separadas), las que romperían el trabajo del usuario (restringir los compiladores), las que no aplican a un equipo de usuario (SSH) y las que necesitan infraestructura que no existe en este entorno (servidor central de logs).
 
 No se saltó ningún test con el perfil `custom.prf`, para no subir el índice de forma artificial.
 
@@ -89,7 +78,7 @@ Con un único script, idempotente y aplicable sin cambios a las tres distribucio
 
 La revisión de los logs mostró además que el banner y el `UMASK` se aplicaron sin errores pero Lynis no los cuenta, por el idioma del banner y porque la línea `UMASK` no existe en Debian ni en Kali. Por eso cada medida debe comprobarse también en el log de Lynis.
 
-Queda pendiente en los tres equipos la configuración de las herramientas instaladas. El script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros (Lynis lo avisa con FINT-4316). Lo mismo pasa con auditd, que se instala sin reglas. Los siguientes pasos serían inicializar AIDE, definir reglas de auditd, corregir el banner y el `UMASK`, y bloquear los protocolos de red que no se usan.
+Queda pendiente en los tres equipos la configuración de las herramientas instaladas. El script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros (Lynis lo avisa con FINT-4316). Lo mismo pasa con auditd, que se instala sin reglas (y en Kali ni siquiera queda activo). Los siguientes pasos serían inicializar AIDE, definir reglas de auditd, corregir el banner y el `UMASK`, y bloquear los protocolos de red que no se usan.
 
 ## 2. Análisis y bastionado de navegador web
 
@@ -136,11 +125,11 @@ Con un único fichero de políticas, desplegado por script y sin tocar los ajust
 
 ### 3.1 Descripción del sistema analizado y herramientas
 
-Se auditaron 2 móviles Android personales (BYOD), ambos Google Pixel: un Pixel 9 Pro y un Pixel 10, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política en los dos móviles. Las comprobaciones se hicieron mediante ADB (Android Debug Bridge), con dos scripts propios: `movil/auditar_android.sh`, que vuelca por consola el estado de cada punto comprobable, y `movil/conexiones_b2.sh`, que lista las conexiones abiertas y la app que tiene cada una (punto B2); y Malwarebytes como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1.
+Se auditaron 2 móviles Android personales (BYOD), ambos Google Pixel: un Pixel 9 Pro y un Pixel 10, los dos con Android 17 y parche de seguridad del 05-10-2026. Se comprobaron los 8 puntos de la política en los dos móviles. Las comprobaciones se hicieron mediante ADB (Android Debug Bridge), con dos scripts propios: `movil/auditar_android.sh`, que vuelca por consola el estado de cada punto comprobable, y `movil/conexiones_b2.sh`, que lista las conexiones abiertas y la app que tiene cada una (punto B2); y Malwarebytes como herramienta de escaneo antimalware, instalada en cada móvil para el punto B1. Se eligió Malwarebytes frente a MobSF o Koodous porque analiza el móvil completo desde el propio dispositivo y sin root; MobSF analiza APKs sueltos y está pensado para auditar una app concreta, no la postura de un dispositivo.
 
 ### 3.2 Plan de pruebas y resultados
 
-**Procedimiento** en cada móvil: activar Opciones de desarrollador y Depuración USB, volcado `antes` con el script, escaneo con Malwarebytes, corrección de lo que falle, volcado `despues`, y desactivar la Depuración USB al terminar. El escaneo de Malwarebytes se hizo una vez por móvil, antes de corregir, porque las correcciones (Bluetooth, redes Wi-Fi y Chrome) no instalan ni quitan aplicaciones y no cambian el resultado de B1.
+**Procedimiento** en cada móvil: activar Opciones de desarrollador y Depuración USB, volcado `antes` con `auditar_android.sh`, `conexiones_b2.sh` con Chrome en uso, escaneo con Malwarebytes, corrección de lo que falle, volcado `despues`, y desactivar la Depuración USB al terminar. El escaneo de Malwarebytes se hizo una vez por móvil, antes de corregir, porque las correcciones (Bluetooth, redes Wi-Fi, actualizar Chrome y cerrar apps) no instalan ni quitan aplicaciones y no cambian el resultado de B1. La única app nueva entre los dos volcados del Pixel 9 Pro es el propio Malwarebytes.
 
 **Resultados** (detalle completo en `movil/checklist.md`):
 
@@ -153,19 +142,19 @@ Se auditaron 2 móviles Android personales (BYOD), ambos Google Pixel: un Pixel 
 | A5. Bluetooth apagado | **No cumplía** | Cumple |
 | B1. Sin malware | Cumple | Cumple |
 | B2. Sin conexiones de fondo no autorizadas | **No cumplía** | **No cumplía** |
-| B3. Sin permisos peligrosos | Cumple | Cumple |
+| B3. Sin permisos peligrosos | Cumple | **No cumplía** |
 
-El punto A1 se comprobó a mano en cada móvil (Ajustes → Instalar aplicaciones desconocidas: ninguna app con el permiso concedido) y el A3 en Ajustes → Actualizaciones de software y en la ficha de Chrome en Play Store, porque el script solo da el nivel de parche.
+El punto A1 se comprobó a mano en cada móvil (Ajustes → Instalar aplicaciones desconocidas: ninguna app con el permiso concedido) y con el instalador de cada app de terceros que da el script: todas vienen de Play Store salvo, en el Pixel 9 Pro, una WebAPK instalada por Chrome (`org.chromium.webapk...`), que es una web añadida a la pantalla de inicio y no un APK de origen desconocido. El A3 se comprobó en Ajustes → Actualizaciones de software y en la ficha de Chrome en Play Store, porque el script solo da el nivel de parche. En B3 el script lista las apps con servicios de accesibilidad (ninguna en los dos móviles), lectores de notificaciones y permiso de superposición; en estos dos últimos solo aparecen componentes del sistema y de Google (lanzador, Android Auto, búsqueda, teléfono y cámara), ninguna app de terceros. El acceso al almacenamiento compartido, que la política también incluye en B3, se comprobó con `dumpsys package`, que indica si el permiso está concedido de verdad (la lista de `appops` incluía apps a las que Android ya se lo había retirado). Ninguna app tiene acceso total al almacenamiento en ninguno de los dos móviles, y en el Pixel 9 Pro ninguna de sus 81 apps de terceros puede leer el almacenamiento compartido. En el Pixel 10, en cambio, 6 apps de terceros podían leer el almacenamiento compartido, y con él los ficheros que descarga el navegador: un explorador de archivos, Adobe Reader, WhatsApp, Dropbox, Telegram y Séneca. Se les retiró el permiso con `adb shell pm revoke`; si alguna lo necesita, lo volverá a pedir al usuario.
 
-Los dos móviles fallaron en el B2, que se explica más abajo. Aparte, en el Pixel 9 Pro falló el Bluetooth encendido, corregido apagándolo, y en el Pixel 10 hubo dos fallos más. El primero, A3: el sistema estaba al día, pero Chrome tenía una actualización pendiente en Play Store, y se corrigió actualizándolo (la ficha pasa de "Actualizar" a "Abrir"). El segundo, A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después.
+Los dos móviles fallaron en el B2, que se explica más abajo. Aparte, en el Pixel 9 Pro falló el Bluetooth encendido, corregido apagándolo, y en el Pixel 10 hubo tres fallos más: A3 y A4, que se explican a continuación, y B3, que se explica junto con la comprobación de permisos. A3: el sistema estaba al día, pero Chrome tenía una actualización pendiente en Play Store, y se corrigió actualizándolo (la ficha pasa de "Actualizar" a "Abrir"). A4: tenía 6 redes Wi-Fi guardadas sin cifrado (`Andared_IoT`, `Carrefour-Conecta`, `QUIRONSALUD`, `Quironsalud_Invitados`, `VuelingWi-Fi` y una variante abierta de `paradores`), típicas de wifis públicas de aeropuertos, hospitales o comercios; se corrigió olvidando esas 6 redes, verificado con `adb shell cmd wifi list-networks` antes y después. Además tenía 2 redes guardadas con SSID oculto y clave compartida, sin autenticación Enterprise (`Livebox7-789E-WiFi7` y `alternative-wifi-etsi`), que la política también prohíbe. Se detectaron con `adb shell dumpsys wifi`, porque `list-networks` no indica si una red está oculta, y se corrigieron olvidándolas. En el Pixel 9 Pro ninguna de las redes guardadas está oculta.
 
-**Punto B2.** En cada móvil, con Chrome abierto y navegando, `conexiones_b2.sh` lee las tablas de conexiones del kernel (`/proc/net/tcp`, `tcp6`, `udp` y `udp6`), que incluyen el UID de cada conexión, y las cruza con `pm list packages -U` para saber qué app tiene cada una. Se incluye UDP porque Chrome y otras apps de Google usan QUIC, que va sobre UDP; con solo TCP no habría aparecido ninguna app de terceros. Se consideran autorizados el navegador y los componentes preinstalados del sistema (servicios de Google Play, Play Store, pila de red, búsqueda y widget del tiempo). En los dos había apps que el usuario había abierto antes y seguían conectadas en segundo plano. En el Pixel 9 Pro, la primera pasada dio 42 conexiones de 8 apps, entre ellas dos de terceros (`com.chess` y `com.anthropic.claude`) y YouTube. En el Pixel 10 dio 115 conexiones de 7 apps, entre ellas dos de terceros, las de los periódicos La Razón (`es.larazon`, con 81 conexiones) y Marca (`com.iphonedroid.marca`), y Google TV. Se corrigió forzando la detención de esas apps (`adb shell am force-stop`). En la segunda pasada, también con Chrome en uso, quedan 26 conexiones en el Pixel 9 Pro y 44 en el Pixel 10, todas de Chrome o de componentes del sistema.
+**Punto B2.** En cada móvil, con Chrome abierto y navegando, `conexiones_b2.sh` lee las tablas de conexiones del kernel (`/proc/net/tcp`, `tcp6`, `udp` y `udp6`), que incluyen el UID de cada conexión, y las cruza con `pm list packages -U` para saber qué app tiene cada una. Se incluye UDP porque Chrome y otras apps de Google usan QUIC, que va sobre UDP; con solo TCP no habría aparecido ninguna app de terceros. Se consideran autorizados el navegador y los componentes preinstalados del sistema (servicios de Google Play, Play Store, pila de red, búsqueda y widget del tiempo). En los dos había apps que el usuario había abierto antes y seguían conectadas en segundo plano. En el Pixel 9 Pro, la primera pasada dio 42 conexiones de 8 apps, entre ellas dos de terceros (`com.chess` y `com.anthropic.claude`) y YouTube. En el Pixel 10 dio 115 conexiones de 7 apps, entre ellas dos de terceros, las apps de los periódicos La Razón (`es.larazon`, con 74 conexiones) y Marca (`com.iphonedroid.marca`), además de Google TV. Se corrigió forzando la detención de esas apps (`adb shell am force-stop`). En la segunda pasada, también con Chrome en uso, quedan 26 conexiones en el Pixel 9 Pro y 44 en el Pixel 10, todas de Chrome o de componentes del sistema.
 
-Evidencia: Chrome desactualizado en el Pixel 10 (figura 20) y escaneos de Malwarebytes sin amenazas (figuras 21 y 22); logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/` (`auditoria.txt` y `conexiones-b2.txt`), y capturas del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
+Evidencia: Chrome desactualizado en el Pixel 10 (figura 20) y escaneos de Malwarebytes sin amenazas (figuras 21 y 22); logs de ADB en `evidencias/movil/<modelo>-antes/` y `evidencias/movil/<modelo>-despues/` (`auditoria.txt`, `conexiones-b2.txt` y, para las redes ocultas y el almacenamiento, `a4-b3-extra.txt`), y capturas del permiso de instalar apps desconocidas (A1) y de las actualizaciones de sistema y de Chrome (A3) en las carpetas `-antes`.
 
 ### 3.3 Conclusiones
 
-Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero los dos tenían fallos de higiene: los dos con apps que el usuario creía cerradas y seguían conectadas en segundo plano, el Pixel 9 Pro además con el Bluetooth encendido sin necesidad, y el Pixel 10 con el navegador sin actualizar y arrastrando redes Wi-Fi abiertas de sitios públicos. Ninguno es grave por sí solo, pero todos amplían la superficie de ataque: con el Bluetooth activo hay más vías de conexión no solicitada, una app que sigue conectada en segundo plano mientras se usa el navegador corporativo podría enviar datos sin que el usuario lo sepa, un navegador desactualizado puede tener vulnerabilidades ya públicas, y una red abierta guardada permite que el móvil se reconecte solo a una red que puede estar controlada por un atacante. Son fallos que se acumulan con el uso diario sin que el usuario lo note, así que conviene revisarlos de forma periódica y no solo una vez.
+Los dos móviles partían de un nivel de seguridad razonable, sin root, sin apps de origen desconocido y sin malware, pero los dos tenían fallos de higiene: los dos con apps que el usuario creía cerradas y seguían conectadas en segundo plano, el Pixel 9 Pro además con el Bluetooth encendido sin necesidad, y el Pixel 10 con el navegador sin actualizar y arrastrando redes Wi-Fi abiertas de sitios públicos y dos redes ocultas sin Enterprise, además de 6 apps de terceros con permiso para leer las descargas del navegador. Ninguno es grave por sí solo, pero todos amplían la superficie de ataque: con el Bluetooth activo hay más vías de conexión no solicitada, una app que sigue conectada en segundo plano mientras se usa el navegador corporativo podría enviar datos sin que el usuario lo sepa, un navegador desactualizado puede tener vulnerabilidades ya públicas, y una red abierta guardada permite que el móvil se reconecte solo a una red que puede estar controlada por un atacante. Son fallos que se acumulan con el uso diario sin que el usuario lo note, así que conviene revisarlos de forma periódica y no solo una vez.
 
 ## 4. Auditoría de sistema web
 
@@ -175,17 +164,17 @@ El objetivo es SOS-hardened, un fork del proyecto SOS2526-11 (asignatura SOS, cu
 
 El enunciado permite auditar "aplicaciones en desarrollo propias", además de los entornos de pruebas que propone (DVWA, OWASP Juice Shop, WebGoat…). Se eligió SOS-hardened porque es una aplicación propia que no está en producción, y porque sus fallos son reales y no se han puesto a propósito, como pasa en esos laboratorios.
 
-Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autenticación JWT; frontend SvelteKit. Herramientas: OWASP ZAP 2.17 como proxy de interceptación y para las pruebas (Spider, Requester y Fuzzer), y `hashcat` (modo 16500, JWT) para comprobar la fortaleza del secreto de firma.
+Stack: backend Node.js/Express con base de datos NeDB (ficheros planos) y autenticación JWT; frontend SvelteKit. Herramientas: OWASP ZAP 2.17 como proxy de interceptación y para las pruebas (Requester y Fuzzer), y `hashcat` (modo 16500, JWT) para comprobar la fortaleza del secreto de firma.
 
-Las vulnerabilidades se clasifican según OWASP Top 10:2021, la edición con la que ZAP 2.17 etiqueta sus alertas. En la edición 2025 equivalen a A01 (control de acceso roto), A04 (fallos criptográficos), A07 (fallos de autenticación), A05 (inyección), A03 (fallos en la cadena de suministro de software) y A02 (configuración de seguridad incorrecta).
+Las vulnerabilidades se clasifican según OWASP Top 10:2021, la edición con la que ZAP 2.17 etiqueta sus alertas. En la edición 2025 cambian de número: A02:2021 pasa a A04 (fallos criptográficos), A03:2021 a A05 (inyección), A05:2021 a A02 (configuración incorrecta) y A06:2021 a A03 (cadena de suministro de software); A01 y A07 mantienen su número.
 
 ### 4.2 Plan de pruebas y resultados
 
-**Trazabilidad del tráfico.** Con ZAP escuchando en `localhost:8082` y Firefox configurado a mano para usar ese proxy también en HTTPS (capturas `#5-zap-proxy-8082.png` y `#5-firefox-proxy-manual.png`) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, lo que demuestra que todo el tráfico HTTP pasa por el proxy sin alterarse.
+**Trazabilidad del tráfico.** Con ZAP escuchando en `localhost:8082` y Firefox configurado a mano para usar ese proxy también en HTTPS (capturas `#5-zap-proxy-8082.png` y `#5-firefox-proxy-manual.png`) se navegó por la aplicación sin modificar ninguna petición. La pestaña History de ZAP registra cada petición y respuesta, incluida la del login, con sus cabeceras y su cuerpo, lo que demuestra que todo el tráfico HTTP pasa por el proxy sin alterarse (figura 28).
 
-Para demostrar también la trazabilidad en HTTPS, se importó el certificado raíz de ZAP en Firefox (Autoridades → Importar → "Confiar en esta CA para identificar sitios web") y se navegó con el proxy activo a `https://example.com`, un dominio externo ajeno a esta práctica usado únicamente para comprobar la intercepción. El certificado de esa página, visto desde el propio navegador, tiene como emisor "Zed Attack Proxy Root CA" en vez del emisor real del sitio, lo que confirma que ZAP genera un certificado propio por cada dominio y que el tráfico cifrado pasa igual por el proxy; la petición `https://example.com/` con `200 OK` queda también registrada en la pestaña History. El certificado con emisor ZAP se ve en la figura 23; las capturas `#5-cert-zap-importado.png` (CA de ZAP en Autoridades) y `#5-zap-history-https.png` (petición HTTPS en History) están en `evidencias/web/capturas/`.
+Para demostrar también la trazabilidad en HTTPS, se importó el certificado raíz de ZAP en Firefox (Autoridades → Importar → "Confiar en esta CA para identificar sitios web") y se navegó con el proxy activo a `https://example.com`, un dominio externo ajeno a esta práctica usado únicamente para comprobar la intercepción. El certificado de esa página, visto desde el propio navegador, tiene como emisor "Zed Attack Proxy Root CA" en vez del emisor real del sitio, lo que confirma que ZAP genera un certificado propio por cada dominio y que el tráfico cifrado pasa igual por el proxy; la petición `https://example.com/` con `200 OK` queda también registrada en la pestaña History. El certificado con emisor ZAP se ve en la figura 23 y la petición HTTPS en History en la figura 29; la captura `#5-cert-zap-importado.png` (CA de ZAP en Autoridades) está en `evidencias/web/capturas/`.
 
-**Metodología seguida**, en caja negra: reconocimiento con el Spider de ZAP para mapear las rutas de la aplicación (incluida la API, versionada en `v1` y `v2`, con tres recursos cada una); prueba de autenticación en cada endpoint de escritura, sin ninguna cabecera; localización del endpoint real de login observando el tráfico generado al enviar el formulario; y, una vez obtenido un token, análisis de su cabecera y crackeo del secreto de firma con una wordlist construida a partir de los nombres del equipo visibles en la propia web.
+**Metodología seguida**, en caja negra: reconocimiento navegando la aplicación a través del proxy, para que ZAP registrara sus rutas (incluida la API, versionada en `v1` y `v2`, con tres recursos cada una); prueba de autenticación en cada endpoint de escritura, sin ninguna cabecera; localización del endpoint real de login observando el tráfico generado al enviar el formulario; y, una vez obtenido un token, análisis de su cabecera y crackeo del secreto de firma con una wordlist construida a partir de los nombres del equipo visibles en la propia web.
 
 **Vulnerabilidad 1. Control de acceso roto (A01:2021).** Se probó `DELETE` sin autenticación contra los 6 endpoints de recurso de la API (3 recursos × 2 versiones):
 
@@ -205,9 +194,9 @@ Para demostrar también la trazabilidad en HTTPS, se importó el certificado ra�
 
 **Dependencias desactualizadas (A06:2021), adicional.** `npm audit` reporta 35 vulnerabilidades (11 moderate, 19 high, 5 critical). La más relevante es `nedb`, la propia base de datos de la aplicación en producción: tiene una vulnerabilidad crítica de Prototype Pollution sin parche disponible. El resto de las críticas y altas vienen de dependencias de testing (`newman`, `postman-*`), no de producción.
 
-**Cabeceras de seguridad (A05:2021), adicional.** El escaneo pasivo de ZAP sobre el tráfico capturado da 5 alertas de configuración, repetidas en las respuestas de la aplicación. Faltan la cabecera `Content-Security-Policy` y la protección anti-clickjacking (`X-Frame-Options`), falta `X-Content-Type-Options: nosniff`, el servidor anuncia su tecnología con `X-Powered-By: Express`, y la API responde con `Access-Control-Allow-Origin: *`, porque el backend usa `cors()` sin opciones. Ninguna es explotable por sí sola, pero quitan capas de defensa. Sin CSP, nada frenaría un script inyectado que llegara a ejecutarse, y la aplicación guarda HTML sin sanear (ver más abajo). Sin protección anti-clickjacking, otra web puede cargar la aplicación dentro de un iframe. `X-Powered-By` le ahorra al atacante identificar el framework. El CORS abierto permite que cualquier web lea las respuestas de la API desde el navegador de quien la visite, aunque aquí el impacto es bajo, porque los datos de lectura son públicos y el token no va en una cookie.
+**Cabeceras de seguridad (A05:2021), adicional.** El escaneo pasivo de ZAP sobre el tráfico capturado da 5 alertas de configuración, repetidas en las respuestas de la aplicación. Faltan la cabecera `Content-Security-Policy` y la protección anti-clickjacking (`X-Frame-Options`), falta `X-Content-Type-Options: nosniff`, el servidor anuncia su tecnología con `X-Powered-By: Express`, y la API responde con `Access-Control-Allow-Origin: *`, porque el backend usa `cors()` sin opciones (las dos cabeceras se ven en la respuesta de la figura 24). Ninguna es explotable por sí sola, pero quitan capas de defensa. Sin CSP, nada frenaría un script inyectado que llegara a ejecutarse, y la aplicación guarda HTML sin sanear (ver más abajo). Sin protección anti-clickjacking, otra web puede cargar la aplicación dentro de un iframe. `X-Powered-By` le ahorra al atacante identificar el framework. El CORS abierto permite que cualquier web lea las respuestas de la API desde el navegador de quien la visite, aunque aquí el impacto es bajo, porque los datos de lectura son públicos y el token no va en una cookie.
 
-**SQL Injection, XSS y Path Traversal (vectores que cita el enunciado).** Se probaron también estos tres vectores, aunque la aplicación no usa SQL (NeDB no es relacional, por lo que la inyección equivalente es la NoSQL ya descrita en la vulnerabilidad 4):
+**SQL Injection, XSS y Path Traversal (vectores que cita el enunciado).** Se probaron también estos tres vectores, con peticiones manuales con `curl`, aunque la aplicación no usa SQL (NeDB no es relacional, por lo que la inyección equivalente es la NoSQL ya descrita en la vulnerabilidad 4):
 
 - *Path Traversal*: 8 variantes de escape de directorio (`../../..`, codificación simple y doble, `....//`) contra la carpeta estática y contra rutas de la API. Las 8 devuelven `404`. No vulnerable: SvelteKit sirve los estáticos con su propio manejador, sin exponer el sistema de ficheros, y las rutas de la API no toman ningún parámetro de ruta o nombre de fichero.
 - *XSS reflejado*: el payload `<script>alert(1)</script>` en parámetros de consulta y en la URL no aparece en ninguna respuesta. No hay eco de parámetros en HTML, así que no es vulnerable por esta vía.
@@ -227,8 +216,8 @@ Repitiendo exactamente los mismos ataques de la sección 4.2:
 
 | Vulnerabilidad | Antes | Después |
 |---|---|---|
-| Acceso sin autenticación | 5/6 endpoints en `200 OK` sin credenciales | 6/6 en `403 Forbidden` |
-| Secreto JWT filtrado | Token forjado con el secreto expuesto, aceptado | Rechazado (`401`); secreto rotado y fuera del código |
+| Control de acceso roto | 5/6 endpoints en `200 OK` sin credenciales | 6/6 en `403 Forbidden` |
+| Secreto JWT débil | Token forjado con el secreto expuesto, aceptado | Rechazado (`401`); secreto rotado y fuera del código |
 | Credenciales por defecto | `admin`/`admin` funcionaba | Rechazado (`401`); credenciales aleatorias en `.env` |
 | Inyección NoSQL | El operador `$ne` alteraba el resultado de la consulta | El operador se descarta antes de llegar a la base de datos (verificado comparando `nation[$ne]=Spain` contra la consulta sin filtro: ambas devuelven el mismo número de resultados, 150, cuando una inyección real habría dado 147) |
 
@@ -377,6 +366,14 @@ El sistema no tenía, en la práctica, control de acceso: la autenticación falt
 
 ![Figura 27](../evidencias/web/capturas/%234-fuzzer-nosql-caja-negra.png)
 
+**Figura 28.** Pestaña History de ZAP con la petición de login (`POST`) y sus cabeceras, sin modificar (trazabilidad HTTP).
+
+![Figura 28](../evidencias/web/capturas/%233-login-request.png)
+
+**Figura 29.** Pestaña History de ZAP con la petición HTTPS a example.com (`200 OK`).
+
+![Figura 29](../evidencias/web/capturas/%235-zap-history-https.png)
+
 ### Anexo B. Ficheros de evidencias
 
 Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los scripts y configuraciones usados:
@@ -387,5 +384,18 @@ Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los s
 - `evidencias/navegador/`: capturas antes y después de cada prueba.
 - `movil/`: scripts `auditar_android.sh` y `conexiones_b2.sh`, y `checklist.md` con el antes y el después de cada móvil.
 - `evidencias/movil/`: volcados de ADB antes y después de cada móvil, y capturas de Malwarebytes y de los ajustes revisados a mano.
-- `web/`: payloads del fuzzing (`payloads/`) y parche de la mitigación (`mitigacion-sos-hardened.patch`).
-- `evidencias/web/`: informe HTML de ZAP, exportación del historial de ZAP (`zap-history-export.csv`), log de `npm audit`, log de las pruebas de XSS y Path Traversal, log de la verificación antes/después de la mitigación, notas de la sesión y capturas numeradas por vulnerabilidad (`capturas/#1-*` a `#5-*`).
+- `web/`: lista de payloads usada en el Fuzzer (`payloads/nosql.txt`) y parche de la mitigación (`mitigacion-sos-hardened.patch`).
+- `evidencias/web/`: informe HTML de ZAP, exportación del historial de ZAP (`zap-history-export.csv`), log de `npm audit`, log de las pruebas de XSS y Path Traversal, log de la verificación antes/después de la mitigación, notas de la sesión y capturas numeradas por apartado (`capturas/#1-*` a `#4-*` por vulnerabilidad y `#5-*` de la trazabilidad).
+
+### Anexo C. Sugerencias de Lynis que no se aplicaron
+
+| Sugerencia | Motivo |
+|---|---|
+| FILE-6310: `/home`, `/var` y `/tmp` en particiones separadas | Exige reparticionar el disco de un sistema ya instalado, con riesgo de perder datos. Se recomienda al instalar equipos nuevos. |
+| BOOT-5122: contraseña en GRUB | Solo protege frente a quien tiene acceso físico al equipo, y sin cifrado de disco ese atacante puede leer el disco igualmente. Se recomienda junto con el cifrado de disco en portátiles. |
+| SSH-7408 (Ubuntu y Debian): endurecer la configuración de SSH | Son equipos de usuario que no deben ofrecer SSH; UFW ya bloquea el puerto 22 entrante. |
+| HRDN-7222: restringir los compiladores a root | El PDI y el personal técnico compilan código en sus equipos; quitarles el compilador rompería su trabajo. |
+| AUTH-9286 y AUTH-9282: edad mínima de contraseña y caducidad de cuentas | Se aplicó la caducidad de 90 días, que es la medida principal. La edad mínima solo evita que el usuario vuelva enseguida a su contraseña anterior. |
+| NETW-3200: protocolos `dccp`, `sctp`, `rds` y `tipc` | No se usan y se podrían bloquear igual que los módulos USB. Se deja como siguiente paso para no ampliar el alcance del script. |
+| ACCT-9630, ACCT-9628 y ACCT-9626: auditd sin reglas (en Kali, sin activar) y sysstat sin activar | Están instalados pero sin configurar, igual que AIDE (ver Conclusiones). |
+| LOGG-2154: enviar los logs a un servidor externo | Necesita un servidor central de logs, que no existe en este entorno. |
