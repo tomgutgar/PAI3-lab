@@ -386,7 +386,7 @@ Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los s
 
 - `sistemas/`: `hardening.sh`, `run_lynis.sh`, `sysctl-hardening.conf` y `custom.prf`.
 - `evidencias/sistemas/Ubuntu/`, `Debian/` y `Kali/`: logs de Lynis (`lynis-*.log`), datos del informe (`report-*.dat`) y capturas de cada pasada.
-- `navegador/`: `firefox/policies.json`, `desplegar.sh` y `directivas.md`.
+- `navegador/`: `firefox/policies.json` y `desplegar.sh`.
 - `evidencias/navegador/`: capturas antes y después de cada prueba.
 - `movil/`: scripts `auditar_android.sh` y `conexiones_b2.sh`, y `checklist.md` con el antes y el después de cada móvil.
 - `evidencias/movil/`: volcados de ADB antes y después de cada móvil, y capturas de Malwarebytes y de los ajustes revisados a mano.

@@ -3,7 +3,7 @@
 # Requiere: adb instalado y "Depuracion USB" activada en el movil.
 # Uso: ./auditar_android.sh <modelo> <antes|despues>
 set -euo pipefail
-command -v adb >/dev/null || { echo "adb no instalado (ver README)."; exit 1; }
+command -v adb >/dev/null || { echo "adb no instalado."; exit 1; }
 adb get-state >/dev/null 2>&1 || { echo "No hay movil conectado (adb devices)."; exit 1; }
 
 MODELO="${1:-movil}"; ETIQUETA="${2:-antes}"
