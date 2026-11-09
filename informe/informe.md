@@ -15,6 +15,8 @@ PAI-3 VULNAWEB · Security Team 5 · Integrantes: Miguel Ridao y Tomás Gutiérr
 - Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar, Wi-Fi abiertas u ocultas guardadas y apps de terceros con permiso para leer las descargas en el otro; y en los dos, apps de terceros con conexiones abiertas en segundo plano), corregidos y verificados después.
 - Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido; tras la corrección, los 6 rechazan las peticiones sin un token válido.
 
+El trabajo sigue el esquema de NIST SP 800-115 (auditar, corregir y volver a auditar) en las cuatro partes, y la correspondencia de cada parte con los controles de CIS Benchmarks, OWASP Top 10 y el ENS en categoría Alta está en el Anexo D.
+
 ## 1. Auditoría de sistemas informáticos
 
 ### 1.1 Descripción del sistema analizado y herramientas
@@ -245,6 +247,10 @@ El sistema no tenía, en la práctica, control de acceso: la autenticación falt
 - España. Real Decreto 311/2022, de 3 de mayo, por el que se regula el Esquema Nacional de Seguridad (ENS), categoría Alta. CCN-CERT. https://www.ccn-cert.cni.es/
 - CISOfy. *Lynis*, herramienta de auditoría de seguridad de sistemas. https://cisofy.com/lynis/
 - OWASP. *OWASP ZAP*, versión 2.17. https://www.zaproxy.org/
+- Mozilla. *Policy Templates for Firefox*. https://mozilla.github.io/policy-templates/
+- Android Developers. *Android Debug Bridge (adb)*. https://developer.android.com/tools/adb
+- Malwarebytes. *Malwarebytes para Android*. https://www.malwarebytes.com/android
+- *hashcat*, modo 16500 (JWT). https://hashcat.net/hashcat/
 
 ## Anexos
 
@@ -399,3 +405,12 @@ Todas las evidencias están en la carpeta `evidencias/` del zip, junto con los s
 | NETW-3200: protocolos `dccp`, `sctp`, `rds` y `tipc` | No se usan y se podrían bloquear igual que los módulos USB. Se deja como siguiente paso para no ampliar el alcance del script. |
 | ACCT-9630, ACCT-9628 y ACCT-9626: auditd sin reglas (en Kali, sin activar) y sysstat sin activar | Están instalados pero sin configurar, igual que AIDE (ver Conclusiones). |
 | LOGG-2154: enviar los logs a un servidor externo | Necesita un servidor central de logs, que no existe en este entorno. |
+
+### Anexo D. Correspondencia con los estándares
+
+| Parte | NIST SP 800-115 | CIS Benchmarks / OWASP | ENS, categoría Alta (RD 311/2022) |
+|---|---|---|---|
+| 1. Sistemas | Revisión de configuración con Lynis antes y después | CIS Benchmarks de Linux: cortafuegos con política de denegar lo entrante, parámetros de kernel, módulos USB, contraseñas | op.exp.2 y op.exp.3 (configuración de seguridad), op.exp.8 (registro de la actividad: auditd, acct), op.exp.6 (protección frente a código dañino: rkhunter) |
+| 2. Navegador | Revisión de configuración con `about:policies` y pruebas antes y después | Configuración segura del navegador mediante política corporativa | op.exp.2 (configuración de seguridad), mp.com (protección de las comunicaciones: HTTPS obligatorio, TLS 1.2 mínimo, DNS cifrado) |
+| 3. Móvil | Revisión de configuración por ADB y escaneo con Malwarebytes | Política BYOD del enunciado (puntos A1-A5 y B1-B3) | op.exp.4 (mantenimiento y actualizaciones), op.exp.6 (código dañino), mp.com (redes inalámbricas seguras) |
+| 4. Web | Pruebas de penetración en caja negra con ZAP y verificación tras corregir | OWASP Top 10:2021 (A01, A02, A03, A05, A06, A07) | mp.s.2 (protección de servicios y aplicaciones web), op.acc (control de acceso y autenticación), mp.sw.2 (pruebas de seguridad antes de la puesta en producción) |
