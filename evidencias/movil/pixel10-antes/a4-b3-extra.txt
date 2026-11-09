@@ -1,0 +1,26 @@
+# A4 redes guardadas con SSID oculto (2026-11-09 17:47)
+ID: 0 SSID: "Andared" HIDDEN: false
+ID: 11 SSID: "WIFIVALME" HIDDEN: false
+ID: 12 SSID: "alternative-wifi-etsi" HIDDEN: true
+ID: 13 SSID: "iPhone de Alex" HIDDEN: false
+ID: 14 SSID: "paradores" HIDDEN: false
+ID: 3 SSID: "Livebox7-789E-WiFi7" HIDDEN: true
+ID: 4 SSID: "MOVISTAR_1495" HIDDEN: false
+ID: 5 SSID: "MOVISTAR_1495_Jaime" HIDDEN: false
+ID: 6 SSID: "MOVISTAR_534F" HIDDEN: false
+ID: 7 SSID: "MOVISTAR_PLUS_1495" HIDDEN: false
+
+# B3 acceso total a almacenamiento (MANAGE_EXTERNAL_STORAGE allow)
+# B3 lectura de almacenamiento compartido (READ_EXTERNAL_STORAGE allow)
+com.google.android.apps.photos
+com.adobe.fas
+
+# Nota (2026-11-09 17:51): la lista de READ_EXTERNAL_STORAGE de arriba sale de appops y no indica si el permiso está concedido.
+# Comprobado con "dumpsys package com.adobe.fas": READ_EXTERNAL_STORAGE granted=false (AUTO_REVOKED por Android por falta de uso).
+# B3 apps de terceros con READ_EXTERNAL_STORAGE concedido (dumpsys package, 2026-11-09 17:51)
+com.mi.android.globalFileexplorer
+com.adobe.reader
+com.whatsapp
+com.dropbox.android
+org.telegram.messenger
+es.juntadeandalucia.ced.senecadroid

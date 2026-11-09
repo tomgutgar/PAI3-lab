@@ -1,0 +1,4 @@
+# A4 redes guardadas con SSID oculto (2026-11-09 17:55)
+
+# B3 acceso total a almacenamiento (MANAGE_EXTERNAL_STORAGE allow)
+# B3 apps de terceros con READ_EXTERNAL_STORAGE concedido (dumpsys package)

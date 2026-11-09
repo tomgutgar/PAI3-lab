@@ -10,7 +10,6 @@ green
 Network Id      SSID                         Security type
 0            Andared                          wpa2-psk
 0            Andared                          wpa3-sae^
-3            Livebox7-789E-WiFi7              wpa3-sae
 4            MOVISTAR_1495                    wpa2-psk
 4            MOVISTAR_1495                    wpa3-sae^
 5            MOVISTAR_1495_Jaime              wpa2-psk
@@ -21,12 +20,11 @@ Network Id      SSID                         Security type
 7            MOVISTAR_PLUS_1495               wpa3-sae^
 11           WIFIVALME                        wpa2-psk
 11           WIFIVALME                        wpa3-sae^
-12           alternative-wifi-etsi            wpa2-psk
-12           alternative-wifi-etsi            wpa3-sae^
 13           iPhone de Alex                   wpa2-psk
 13           iPhone de Alex                   wpa3-sae^
 14           paradores                        wpa2-psk
 14           paradores                        wpa3-sae^
+# A4 redes con SSID oculto (HIDDEN: true)
 # A5 bluetooth (0 = apagado)
 0
 # B1 apps de terceros y quien las instalo
@@ -180,5 +178,7 @@ com.google.android.apps.camera.services
 com.google.android.odad
 com.google.android.dialer
 com.google.android.googlequicksearchbox
+# B3 acceso total a almacenamiento
+# B3 apps de terceros con lectura de almacenamiento concedida
 # Extra cifrado
 encrypted
