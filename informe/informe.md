@@ -15,7 +15,7 @@ PAI-3 VULNAWEB · Security Team Nº ___ · Integrantes: ___ · Fecha: ___
 
 _Media página. Una frase de resultado por parte._
 
-- Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu y de 64 a 71 en Debian, ambos por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd). _(Fedora pendiente.)_
+- Sistemas: con `hardening.sh`, el hardening index de Lynis sube de 64 a 73 en Ubuntu, de 64 a 71 en Debian y de 64 a 73 en Kali, los tres por encima del 70 exigido; la mejora viene sobre todo de añadir detección y auditoría (rkhunter, fail2ban, AIDE, auditd).
 - Web: de los 6 endpoints de escritura probados, 5 aceptan peticiones sin ninguna autenticación, y el sexto usa un secreto JWT hardcodeado que se recupera en segundos con un diccionario dirigido.
 - Móvil: los 2 Pixel auditados no tenían root ni malware, pero fallaban en puntos de higiene de la política (Bluetooth encendido en uno; Chrome sin actualizar y Wi-Fi abiertas guardadas en el otro), corregidos y verificados después.
 
@@ -23,9 +23,9 @@ _Media página. Una frase de resultado por parte._
 
 ### 1.1 Descripción del sistema analizado y herramientas
 
-Se han auditado **3 máquinas virtuales**, cada una con una distribución Linux distinta instalada desde su ISO oficial en su última versión estable: **Ubuntu 24.04.5 LTS** (última LTS), **Fedora** y **Debian 13**. Usar tres distribuciones permite comprobar que las medidas de bastionado son portables y no dependen de una distribución concreta. Antes de bastionar se tomó un *snapshot* de cada VM.
+Se han auditado **3 equipos**, cada uno con una distribución Linux distinta: dos máquinas virtuales instaladas desde la ISO oficial de su última versión estable, **Ubuntu 24.04.5 LTS** (última LTS) y **Debian 13**, y un portátil físico de uso diario con **Kali Linux Rolling**. Usar tres distribuciones permite comprobar que las medidas de bastionado son portables y no dependen de una distribución concreta. Antes de bastionar se tomó un *snapshot* de cada VM. En el portátil no hay snapshot, así que antes de empezar se dejó el sistema sin ninguna medida aplicada, devolviendo cada fichero que toca el script a su contenido original (comprobado con el md5 que guarda el paquete), y se reinició para descargar los parámetros del kernel.
 
-La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de controles y devuelve un *hardening index* de 0 a 100. Se ejecuta antes y después del bastionado para medir la mejora. El bastionado se aplica con el script propio **`sistemas/hardening.sh`**, idempotente y organizado por grupos que corresponden a avisos concretos de Lynis (en Fedora, mismas medidas usando `dnf` en lugar de `apt`).
+La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de controles y devuelve un *hardening index* de 0 a 100. Se ejecuta antes y después del bastionado para medir la mejora. El bastionado se aplica con el script propio **`sistemas/hardening.sh`**, idempotente y organizado por grupos que corresponden a avisos concretos de Lynis. Las tres distribuciones usan `apt` (Kali está basada en Debian), así que el mismo script sirve sin cambios en las tres.
 
 #### Herramientas y medidas que aplica `hardening.sh`
 
@@ -43,12 +43,12 @@ La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de 
 
 ### 1.2 Plan de pruebas y resultados
 
-**Equipos.** `Pai-ubuntu` (Ubuntu 24.04.5 LTS) y `pai-debian` (Debian 13), ambos auditados con Lynis 3.1.8 el 2-nov-2026. _(Fedora: pendiente.)_
+**Equipos.** `Pai-ubuntu` (Ubuntu 24.04.5 LTS) y `pai-debian` (Debian 13), auditados con Lynis 3.1.8 el 2-nov-2026, y `RIDAO` (Kali Linux Rolling, kernel 7.1.5, portátil físico), auditado con Lynis 3.1.7 el 9-nov-2026.
 
 **Procedimiento** (en cada VM, siguiendo el esquema de NIST SP 800-115: auditar, corregir, volver a auditar):
 
 1. `sudo ./run_lynis.sh antes`: auditoría inicial.
-2. `sudo ./hardening.sh firewall` y nueva pasada de Lynis, para medir esta medida por separado. Esta pasada se guardó también con la etiqueta `antes` y sobrescribió el log inicial, así que el índice inicial (64) queda demostrado con la captura `PrimerTest*.png` y el log `antes` corresponde al estado tras el firewall.
+2. `sudo ./hardening.sh firewall` y nueva pasada de Lynis, para medir esta medida por separado. Esta pasada se guardó también con la etiqueta `antes` y sobrescribió el log inicial, así que el índice inicial (64) queda demostrado con la captura `PrimerTest*.png` y el log `antes` corresponde al estado tras el firewall. En Kali esta pasada se guardó con la etiqueta `firewall`, así que se conservan los tres logs.
 3. `sudo ./hardening.sh`: el resto de grupos.
 4. `sudo ./run_lynis.sh despues`: auditoría final.
 
@@ -58,16 +58,21 @@ La auditoría se hace con **Lynis** (perfil por defecto), que revisa cientos de 
 |--------|:-----------:|:-------------:|:--------------:|:------------------------------:|:-----------------------------:|
 | Ubuntu 24.04.5 | 64 | 66 | **73** | 206/312 → 242/330 | 44 → 38 |
 | Debian 13      | 64 | 65 | **71** | 214/327 → 246/342 | 49 → 42 |
+| Kali Rolling   | 64 | 65 | **73** | 182/278 → 212/288 | 42 → 35 |
 
-Los dos equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests más en la segunda pasada (270 → 282 en Ubuntu, 279 → 288 en Debian), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
+Los tres equipos superan el objetivo de **≥ 70**. Lynis ejecuta algunos tests más en la pasada final (270 → 282 en Ubuntu, 279 → 288 en Debian, 263 → 269 en Kali), porque al instalar herramientas nuevas, como AIDE o auditd, aparecen comprobaciones nuevas sobre ellas.
 
 **Firewall (64 → 66 en Ubuntu, 64 → 65 en Debian).** Con UFW activo y la política "denegar todo lo entrante" (la que recomienda el CIS Benchmark), Lynis pasa a dar el firewall por configurado y el índice sube 1-2 puntos.
 
-Evidencias: `evidencias/sistemas/Ubuntu/` y `evidencias/sistemas/Debian/`, con los logs y `report.dat` de Lynis y capturas de las tres pasadas: `PrimerTest*.png` (inicial), `SegundoTestFirewall*.png` (tras el firewall) y `TercerTestHardeningCompleto*.png` (final).
+**Firewall en Kali (64 → 65).** Aquí el caso es distinto. Lynis ya marca el firewall como activo en la pasada inicial (`firewall_software[]=nftables`, `firewall_active=1`), porque Docker carga sus propias reglas en nftables, así que FIRE-4590 da los mismos puntos con y sin UFW. El punto que se gana viene de otro sitio: al activarse, UFW aplica su fichero `/etc/ufw/sysctl.conf`, que desactiva las redirecciones ICMP, y eso resuelve 3 comprobaciones de KRNL-6000 (`accept_redirects` en IPv4 e IPv6). UFW se mantiene igualmente, porque las reglas de Docker solo gestionan el tráfico de los contenedores y no imponen ninguna política sobre lo que entra al equipo.
+
+Evidencias: `evidencias/sistemas/Ubuntu/`, `evidencias/sistemas/Debian/` y `evidencias/sistemas/Kali/`, con los logs y `report.dat` de Lynis y capturas de las tres pasadas: `PrimerTest*.png` (inicial), `SegundoTestFirewall*.png` (tras el firewall) y `TercerTestHardeningCompleto*.png` (final).
 
 ### 1.3 Conclusiones
 
-Con un único script, idempotente y aplicable a ambas distribuciones, las dos máquinas pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos; la mayor mejora (6-7 puntos) viene de las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu y Debian les falta sobre todo detectar y registrar lo que ocurre en el sistema.
+Con un único script, idempotente y aplicable sin cambios a las tres distribuciones, los tres equipos pasan de un índice de 64 a **71-73**, por encima del 70 exigido. El firewall aporta 1-2 puntos; la mayor mejora (6-8 puntos) viene de las **herramientas de detección y auditoría** (rkhunter, fail2ban, AIDE, auditd, acct). Es decir, a las instalaciones por defecto de Ubuntu, Debian y Kali les falta sobre todo detectar y registrar lo que ocurre en el sistema.
+
+Queda una tarea pendiente en los tres equipos: el script instala AIDE pero no crea su base de datos de referencia (`aideinit`), y sin ella AIDE no puede detectar cambios en los ficheros. Lynis lo avisa en la pasada final (FINT-4316).
 
 ## 2. Análisis y bastionado de navegador web
 
